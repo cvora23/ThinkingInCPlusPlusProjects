@@ -1,0 +1,533 @@
+Introduction to Objects Notes:
+
+Q1: Problem with Imperative Languages.
+All programming languages provide abstractions.
+“What is it that you are abstracting?” Assembly language is a small
+abstraction of the underlying machine. Many so-called
+“imperative” languages that followed (such as Fortran, BASIC, and
+C) were abstractions of assembly language. These languages are big
+improvements over assembly language, but their primary
+abstraction still requires you to think in terms of the structure of the
+computer rather than the structure of the problem you are trying to
+solve. The programmer must establish the association between the
+machine model (in the “solution space,” which is the place where
+you’re modeling that problem, such as a computer) and the model
+of the problem that is actually being solved (in the “problem
+space,” which is the place where the problem exists). The effort
+required to perform this mapping, and the fact that it is extrinsic to
+the programming language, produces programs that are difficult to
+write and expensive to maintain, and as a side effect created the
+entire “programming methods” industry
+
+Q2: Advantages of OOP
+The object-oriented approach goes a step farther by providing tools
+for the programmer to represent elements in the problem space.
+This representation is general enough that the programmer is not
+constrained to any particular type of problem.
+We refer to the elements in the problem space and their representations in the
+solution space as “objects.”
+Thus, OOP allows you to describe the
+problem in terms of the problem, rather than in terms of the
+computer where the solution will run. There’s still a connection
+back to the computer, though. Each object looks quite a bit like a
+little computer; it has a state, and it has operations that you can ask
+it to perform.
+
+Q3: CHARACTERISTIC OF OOP
+Alan Kay summarized five basic characteristics of Smalltalk, the
+first successful object-oriented language and one of the languages
+upon which C++ is based.
+
+1: Everything is an object. Think of an object as a fancy variable; it stores data, but you can “make requests” to that object, asking it to perform operations on itself.
+2: A program is a bunch of objects telling each
+other what to do by sending messages . To
+ make a request of an object, you “send a message” to that object.
+More concretely, you can think of a message as a request to
+call a function that belongs to a particular object.
+3: Each object has its own memory made up of
+other objects .
+ Put another way, you create a new kind of
+object by making a package containing existing objects. Thus,
+you can build complexity in a program while hiding it
+behind the simplicity of objects.
+4: Every object has a type .
+ Using the parlance, each object
+is an instance of a class, in which “class” is synonymous with
+“type.” The most important distinguishing characteristic of a
+class is “What messages can you send to it?”
+5: All objects of a particular type can receive the
+same messages .  Because an object of type “circle” is also an
+object of type “shape,” a circle is guaranteed to accept shape
+messages. This means you can write code that talks to shapes
+and automatically handles anything that fits the description
+of a shape. This substitutability is one of the most powerful concepts in OOP.
+
+Q4: Classes and Objects
+ Objects that are identical except for their state
+during a program’s execution are grouped together into “classes of
+objects” and that’s where the keyword class came from. Creating
+abstract data types (classes) is a fundamental concept in object-
+oriented programming. Abstract data types work almost exactly
+like built-in types: You can create variables of a type (called objects
+or instances in object-oriented parlance) and manipulate those
+variables (called sending messages or requests; you send a message
+and the object figures out what to do with it). The members
+(elements) of each class share some commonality: every account
+has a balance, every teller can accept a deposit, etc. At the same
+time, each member has its own state, each account has a different
+balance, each teller has a name. Thus, the tellers, customers,
+accounts, transactions, etc., can each be represented with a unique
+entity in the computer program. This entity is the object, and each
+object belongs to a particular class that defines its characteristics
+and behaviors. Since a class describes a set of objects that have identical
+characteristics (data elements) and behaviors (functionality), a class
+is really a data type because a floating point number, for example,
+also has a set of characteristics and behaviors. The difference is that
+a programmer defines a class to fit a problem rather than being
+forced to use an existing data type that was designed to represent a unit of storage in a machine.
+
+5: Class Interfaces
+how do you get an object to do useful work for you? There
+must be a way to make a request of the object so that it will do
+something, such as complete a transaction, draw something on the
+screen or turn on a switch. And each object can satisfy only certain
+requests. The requests you can make of an object are defined by its
+interface, and the type is what determines the interface. The interface establishes what requests you can make for a particular object. However, there must be code somewhere to
+satisfy that request. This, along with the hidden data, comprises the implementation
+
+6: Hiding Implementation use
+It is helpful to break up the playing field into class creators (those
+who create new data types) and client programmers4 (the class
+consumers who use the data types in their applications). The goal
+of the client programmer is to collect a toolbox full of classes to use for rapid application development. The goal of the class creator is
+to build a class that exposes only what’s necessary to the client
+programmer and keeps everything else hidden. Why? Because if
+it’s hidden, the client programmer can’t use it, which means that
+the class creator can change the hidden portion at will without
+worrying about the impact to anyone else. The hidden portion
+usually represents the tender insides of an object that could easily
+be corrupted by a careless or uninformed client programmer, so
+hiding the implementation reduces program bugs. The concept of
+implementation hiding cannot be overemphasized.
+In any relationship it’s important to have boundaries that are
+respected by all parties involved. When you create a library, you
+establish a relationship with the client programmer, who is also a
+programmer, but one who is putting together an application by
+using your library, possibly to build a bigger library. If all the members of a class are available to everyone, then the client programmer can do anything with that class and there’s no
+way to enforce rules. Even though you might really prefer that the
+client programmer not directly manipulate some of the members of
+your class, without access control there’s no way to prevent it.
+Everything’s naked to the world.
+
+7: Use of access control
+first reason for access control is to keep client programmers’
+hands off portions they shouldn’t touch – parts that are necessary
+for the internal machinations of the data type but not part of the
+interface that users need in order to solve their particular problems.
+This is actually a service to users because they can easily see what’s
+important to them and what they can ignore.
+The second reason for access control is to allow the library designer
+to change the internal workings of the class without worrying
+about how it will affect the client programmer. For example, you
+might implement a particular class in a simple fashion to ease
+development, and then later discover that you need to rewrite it in
+order to make it run faster. If the interface and implementation are
+clearly separated and protected, you can accomplish this easily and
+require only a relink by the user.
+
+8: Access Specifiers
+C++ uses three explicit keywords to set the boundaries in a class:
+public, private, and protected . These access specifiers determine who can use the
+definitions that follow. public means the following definitions are
+available to everyone. The private keyword, on the other hand,
+means that no one can access those definitions except you, the
+creator of the type, inside member functions of that type. private is
+a brick wall between you and the client programmer. If someone
+tries to access a private member, they’ll get a compile-time error.
+Protected acts just like private, with the exception that an
+inheriting class has access to protected members, but not private
+members. 
+
+9: Reusing Implementation : Composition
+Code reuse is one of the
+greatest advantages that object-oriented programming languages
+provide.
+The simplest way to reuse a class is to just use an object of that class
+directly, but you can also place an object of that class inside a new
+class. We call this “creating a member object.” Your new class can
+be made up of any number and type of other objects, in any
+combination that you need to achieve the functionality desired in
+your new class.
+
+10: Composition and Inheritance:
+Because you are composing a new class from
+existing classes, this concept is called composition (or more
+generally, aggregation). Composition is often referred to as a “has-a”
+relationship, as in “a car has an engine.”  The member
+objects of your new class are usually private, making them
+inaccessible to the client programmers who are using the class. This
+allows you to change those members without disturbing existing
+client code. You can also change the member objects at runtime, to
+dynamically change the behavior of your program. 
+Inheritance, which is described next, does not have this flexibility since the
+compiler must place compile-time restrictions on classes created
+with inheritance. Because inheritance is so important in object-oriented
+programming it is often highly emphasized, and the new
+programmer can get the idea that inheritance should be used
+everywhere. This can result in awkward and overly-complicated
+designs. Instead, you should first look to composition when
+creating new classes, since it is simpler and more flexible. If you
+take this approach, your designs will stay cleaner. Once you’ve had
+some experience, it will be reasonably obvious when you need
+inheritance.
+
+11: Inheritance: reusing the interface
+It seems a pity, however, to go to all the trouble to create a class
+and then be forced to create a brand new one that might have
+similar functionality. It’s nicer if we can take the existing class,
+clone it, and then make additions and modifications to the clone.
+This is effectively what you get with inheritance, with the exception
+that if the original class (called the base or super or parent class) is
+changed, the modified “clone” (called the derived or inherited or sub
+or child class) also reflects those changes. Two types can have
+characteristics and behaviors in common, but one type may contain
+more characteristics than another and may also handle more
+messages (or handle them differently). Inheritance expresses this
+similarity between types using the concept of base types and derived types. A base type contains all of the characteristics and behaviors that are shared among the types derived from it.
+
+12: Differentiate Derived class from Base Class
+You have two ways to differentiate your new derived class from
+the original base class. The first is quite straightforward: You
+simply add brand new functions to the derived class. These new
+functions are not part of the base class interface. This means that
+the base class simply didn’t do as much as you wanted it to, so you
+added more functions. This simple and primitive use for
+inheritance is, at times, the perfect solution to your problem.
+However, you should look closely for the possibility that your base
+class might also need these additional functions. This process of
+discovery and iteration of your design happens regularly in object-
+oriented programming. Although inheritance may sometimes imply that you are going to
+add new functions to the interface, that’s not necessarily true. The
+second and more important way to differentiate your new class is
+to change the behavior of an existing base-class function. This is
+referred to as overriding that function. To override a function, you simply create a new definition for the function in the derived class. You’re saying, “I’m using the same
+interface function here, but I want it to do something different for
+my new type.”
+
+
+13: IS-a vs .Is-like-a relationships
+Should inheritance override only base-class functions (and not add new
+member functions that aren’t in the base class)? This would mean
+that the derived type is exactly the same type as the base class since
+it has exactly the same interface. As a result, you can exactly
+substitute an object of the derived class for an object of the base
+class. This can be thought of as pure substitution, and it’s often
+referred to as the substitution principle. We often refer to the relationship between the base class and derived classes in this case as an is-a relationship, because you can say “a circle is a shape.” A test for inheritance is to determine whether you can state the is-a relationship about the
+classes and have it make sense. There are times when you must add new interface elements to a
+derived type, thus extending the interface and creating a new type.
+The new type can still be substituted for the base type, but the
+substitution isn’t perfect because your new functions are not
+accessible from the base type. This can be described as an is-like-a
+relationship; the new type has the interface of the old type but it
+also contains other functions, so you can’t really say it’s exactly the
+same.
+
+
+
+
+14: Interchangeable objects with polymorphism
+When dealing with type hierarchies, you often want to treat an
+object not as the specific type that it is but instead as its base type.
+This allows you to write code that doesn’t depend on specific types. Such code is unaffected by the addition of new types, and adding new types is the most common way to extend an object-oriented
+program to handle new situations. For example, you can derive a
+new subtype of shape called pentagon without modifying the
+functions that deal only with generic shapes. This ability to extend
+a program easily by deriving new subtypes is important because it
+greatly improves designs while reducing the cost of software
+maintenance. 
+
+15: Early Binding and Late Binding
+There’s a problem, however, with attempting to treat derived-type
+objects as their generic base types (circles as shapes, bicycles as
+vehicles, cormorants as birds, etc.). If a function is going to tell a generic shape to draw itself, or a generic vehicle to steer, or a generic bird to move, the compiler cannot know at compile-time
+precisely what piece of code will be executed. That’s the whole
+point – when the message is sent, the programmer doesn’t want to
+know what piece of code will be executed; the draw function can be
+applied equally to a circle, a square, or a triangle, and the object
+will execute the proper code depending on its specific type. If you
+don’t have to know what piece of code will be executed, then when
+you add a new subtype, the code it executes can be different
+without requiring changes to the function call. . Therefore, the
+compiler cannot know precisely what piece of code is executed, so
+what does it do? The answer is the primary twist in object-oriented programming:
+The compiler cannot make a function call in the traditional sense.
+The function call generated by a non-OOP compiler causes what is
+called early binding, a term you may not have heard before because
+you’ve never thought about it any other way. It means the compiler
+generates a call to a specific function name, and the linker resolves this call to the absolute address of the code to be executed. In OOP,
+the program cannot determine the address of the code until
+runtime, so some other scheme is necessary when a message is sent
+to a generic object.
+To solve the problem, object-oriented languages use the concept of
+late binding. When you send a message to an object, the code being
+called isn’t determined until runtime. The compiler does ensure
+that the function exists and performs type checking on the
+arguments and return value (a language in which this isn’t true is
+called weakly typed), but it doesn’t know the exact code to execute. To perform late binding, the C++ compiler inserts a special bit of code in lieu of the absolute call. This code calculates the address of
+the function body, using information stored in the object.  Thus, each object
+can behave differently according to the contents of that special bit
+of code. When you send a message to an object, the object actually
+does figure out what to do with that message.
+
+
+16: Virtual keyword
+You state that you want a function to have the flexibility of late-
+binding properties using the keyword virtual. You don’t need to
+understand the mechanics of virtual to use it, but without it you
+can’t do object-oriented programming in C++. In C++, you must
+remember to add the virtual keyword because, by default, member
+functions are not dynamically bound. Virtual functions allow you
+to express the differences in behavior of classes in the same family.
+Those differences are what cause polymorphic behavior.
+
+17: Upcasting
+s process of treating a derived type as though it were its
+base type upcasting. The name cast is used in the sense of casting
+into a mold and the up comes from the way the inheritance diagram
+is typically arranged, with the base type at the top and the derived classes fanning out downward. Thus, casting to a base type is moving up the inheritance diagram: “upcasting.”
+
+18: Static Storage or Stack C++
+ C++ takes the approach that control of efficiency
+is the most important issue, so it gives the programmer a choice.
+For maximum runtime speed, the storage and lifetime can be
+determined while the program is being written, by placing the
+objects on the stack or in static storage. The stack is an area in
+memory that is used directly by the microprocessor to store data
+during program execution. Variables on the stack are sometimes
+called automatic or scoped variables. The static storage area is simply
+a fixed patch of memory that is allocated before the program begins
+to run. Using the stack or static storage area places a priority on the
+speed of storage allocation and release, which can be valuable in
+some situations. However, you sacrifice flexibility because you
+must know the exact quantity, lifetime, and type of objects while
+you’re writing the program. If you are trying to solve a more
+general problem, such as computer-aided design, warehouse
+management, or air-traffic control, this is too restrictive.
+
+19: HEAP C++
+The second approach is to create objects dynamically in a pool of
+memory called the heap. In this approach you don’t know until
+runtime how many objects you need, what their lifetime is, or what
+their exact type is. Those decisions are made at the spur of the
+moment while the program is running. If you need a new object,
+you simply make it on the heap when you need it, using the new keyword. When you’re finished with the storage, you must release it using the delete keyword. Because the storage is managed dynamically at runtime, the amount of time required to allocate storage on the heap is
+significantly longer than the time to create storage on the stack.
+(Creating storage on the stack is often a single microprocessor
+instruction to move the stack pointer down, and another to move it
+back up.) The dynamic approach makes the generally logical
+assumption that objects tend to be complicated, so the extra
+overhead of finding storage and releasing that storage will not have
+an important impact on the creation of an object. In addition, the
+greater flexibility is essential to solve general programming
+problems.
+
+20: Lifetime of Object
+There’s another issue, however, and that’s the lifetime of an object.
+If you create an object on the stack or in static storage, the compiler
+determines how long the object lasts and can automatically destroy
+it. However, if you create it on the heap, the compiler has no
+knowledge of its lifetime. In C++, the programmer must determine
+pro-grammatically when to destroy the object, and then perform the
+destruction using the delete keyword. As an alternative, the
+environment can provide a feature called a garbage collector that
+automatically discovers when an object is no longer in use and
+destroys it. Of course, writing programs using a garbage collector is
+much more convenient, but it requires that all applications must be
+able to tolerate the existence of the garbage collector and the
+overhead for garbage collection. This does not meet the design
+requirements of the C++ language and so it was not included,
+although third-party garbage collectors exist for C++.
+
+21: Exception handling: dealing with errors
+Because it’s so hard to design a good error-handling scheme, many languages
+simply ignore the issue, passing the problem on to library designers
+who come up with halfway measures that can work in many
+situations but can easily be circumvented, generally by just
+ignoring them. 
+Exception handling wires error handling directly into the
+programming language and sometimes even the operating system.
+An exception is an object that is “thrown” from the site of the error
+and can be “caught” by an appropriate exception handler designed to
+handle that particular type of error. It’s as if exception handling is a
+different, parallel path of execution that can be taken when things
+go wrong. And because it uses a separate execution path, it doesn’t
+need to interfere with your normally-executing code. This makes
+that code simpler to write since you aren’t constantly forced to
+check for errors. In addition, a thrown exception is unlike an error
+value that’s returned from a function or a flag that’s set by a
+function in order to indicate an error condition – these can be
+ignored. An exception cannot be ignored so it’s guaranteed to be
+dealt with at some point. Finally, exceptions provide a way to
+recover reliably from a bad situation. Instead of just exiting the
+program, you are often able to set things right and restore the
+execution of a program, which produces much more robust
+systems.
+It’s worth noting that exception handling isn’t an object-oriented
+feature, although in object-oriented languages the exception is
+normally represented with an object. Exception handling existed before object-oriented languages.
+22: Why C++ succeeds
+Part of the reason C++ has been so successful is that the goal was
+not just to turn C into an OOP language (although it started that
+way), but also to solve many other problems facing developers
+today, especially those who have large investments in C.
+Traditionally, OOP languages have suffered from the attitude that
+you should abandon everything you know and start from scratch
+with a new set of concepts and a new syntax, arguing that it’s better
+in the long run to lose all the old baggage that comes with
+procedural languages. This may be true, in the long run. But in the
+short run, a lot of that baggage was valuable. The most valuable
+elements may not be the existing code base (which, given adequate
+tools, could be translated), but instead the existing mind base. If
+you’re a functioning C programmer and must drop everything you
+know about C in order to adopt a new language, you immediately
+become much less productive for many months, until your mind
+fits around the new paradigm. Whereas if you can leverage off of
+your existing C knowledge and expand on it, you can continue to
+be productive with what you already know while moving into the
+world of object-oriented programming. As everyone has his or her
+own mental model of programming, this move is messy enough as
+it is without the added expense of starting with a new language
+model from square one. So the reason for the success of C++, in a
+nutshell, is economic: It still costs to move to OOP, but C++ may
+cost less18.
+The goal of C++ is improved productivity. This productivity comes
+in many ways, but the language is designed to aid you as much as
+possible, while hindering you as little as possible with arbitrary
+rules or any requirement that you use a particular set of features.
+C++ is designed to be practical; C++ language design decisions
+were based on providing the maximum benefits to the programmer
+(at least, from the world view of C).
+
+A better C
+
+You get an instant win even if you continue to write C code
+because C++ has closed many holes in the C language and provides
+better type checking and compile-time analysis. You’re forced to
+declare functions so that the compiler can check their use. The need
+for the preprocessor has virtually been eliminated for value
+substitution and macros, which removes a set of difficult-to-find
+bugs. C++ has a feature called references that allows more
+convenient handling of addresses for function arguments and
+return values. The handling of names is improved through a
+feature called function overloading, which allows you to use the same
+name for different functions. A feature called namespaces also
+improves the control of names. There are numerous smaller
+features that improve the safety of C.
+
+You’re already on the learning curve
+
+The problem with learning a new language is productivity. No
+company can afford to suddenly lose a productive software
+engineer because he or she is learning a new language. C++ is an
+extension to C, not a complete new syntax and programming
+model. It allows you to continue creating useful code, applying the
+features gradually as you learn and understand them. This may be
+one of the most important reasons for the success of C++.
+In addition, all of your existing C code is still viable in C++, but
+because the C++ compiler is pickier, you’ll often find hidden C
+errors when recompiling the code in C++.
+
+Efficiency
+
+Sometimes it is appropriate to trade execution speed for
+programmer productivity. A financial model, for example, may be
+useful for only a short period of time, so it’s more important to create the model rapidly than to execute it rapidly. However, most
+applications require some degree of efficiency, so C++ always errs
+on the side of greater efficiency. Because C programmers tend to be
+very efficiency-conscious, this is also a way to ensure that they
+won’t be able to argue that the language is too fat and slow. A
+number of features in C++ are intended to allow you to tune for
+performance when the generated code isn’t efficient enough.
+Not only do you have the same low-level control as in C (and the
+ability to directly write assembly language within a C++ program),
+but anecdotal evidence suggests that the program speed for an
+object-oriented C++ program tends to be within ±10% of a program
+written in C, and often much closer19. The design produced for an
+OOP program may actually be more efficient than the C
+counterpart.
+
+Systems are easier to express and understand
+
+Classes designed to fit the problem tend to express it better. This
+means that when you write the code, you’re describing your
+solution in the terms of the problem space (“Put the grommet in the
+bin”) rather than the terms of the computer, which is the solution
+space (“Set the bit in the chip that means that the relay will close”).
+You deal with higher-level concepts and can do much more with a
+single line of code.
+The other benefit of this ease of expression is maintenance, which
+(if reports can be believed) takes a huge portion of the cost over a
+program’s lifetime. If a program is easier to understand, then it’s
+easier to maintain. This can also reduce the cost of creating and
+maintaining the documentation.
+
+
+Maximal leverage with libraries
+
+The fastest way to create a program is to use code that’s already
+written: a library. A major goal in C++ is to make library use easier.
+This is accomplished by casting libraries into new data types
+(classes), so that bringing in a library means adding new types to
+the language. Because the C++ compiler takes care of how the
+library is used – guaranteeing proper initialization and cleanup,
+and ensuring that functions are called properly – you can focus on
+what you want the library to do, not how you have to do it.
+Because names can be sequestered to portions of your program via
+C++ namespaces, you can use as many libraries as you want
+without the kinds of name clashes you’d run into with C.
+
+Source-code reuse with templates
+
+There is a significant class of types that require source-code
+modification in order to reuse them effectively. The template feature
+in C++ performs the source code modification automatically,
+making it an especially powerful tool for reusing library code. A
+type that you design using templates will work effortlessly with
+many other types. Templates are especially nice because they hide
+the complexity of this kind of code reuse from the client
+programmer.
+
+Error handling
+
+Error handling in C is a notorious problem, and one that is often
+ignored – finger-crossing is usually involved. If you’re building a
+large, complex program, there’s nothing worse than having an
+error buried somewhere with no clue as to where it came from.
+C++ exception handling is a way to guarantee that an error is noticed
+and that something happens as a result.
+
+Programming in the large
+
+Many traditional languages have built-in limitations to program
+size and complexity. BASIC, for example, can be great for pulling
+together quick solutions for certain classes of problems, but if the
+program gets more than a few pages long or ventures out of the
+normal problem domain of that language, it’s like trying to swim
+through an ever-more viscous fluid. C, too, has these limitations.
+For example, when a program gets beyond perhaps 50,000 lines of
+code, name collisions start to become a problem – effectively, you
+run out of function and variable names. Another particularly bad
+problem is the little holes in the C language – errors buried in a
+large program can be extremely difficult to find.
+There’s no clear line that tells you when your language is failing
+you, and even if there were, you’d ignore it. You don’t say, “My
+BASIC program just got too big; I’ll have to rewrite it in C!”
+Instead, you try to shoehorn a few more lines in to add that one
+new feature. So the extra costs come creeping up on you.
+C++ is designed to aid programming in the large, that is, to erase
+those creeping-complexity boundaries between a small program
+and a large one. You certainly don’t need to use OOP, templates,
+namespaces, and exception handling when you’re writing a hello-
+world style utility program, but those features are there when you
+need them. And the compiler is aggressive about ferreting out bug-
+producing errors for small and large programs alike.
