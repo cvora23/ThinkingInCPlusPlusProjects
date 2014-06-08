@@ -1,0 +1,723 @@
+The C In C++ Notes:
+
+Q1: Function Prototyping
+Standard C and C++ use a feature called function prototyping. With
+function prototyping, you must use a description of the types of
+arguments when declaring and defining a function. This
+description is the “prototype.” When the function is called, the
+compiler uses the prototype to ensure that the proper arguments
+are passed in and that the return value is treated correctly. 
+
+Q2: Unnamed arguments
+In C++, an argument may be
+unnamed in the argument list of the function definition. Since it is
+unnamed, you cannot use it in the function body, of course.
+Unnamed arguments are allowed to give the programmer a way to
+“reserve space in the argument list.” Whoever uses the function
+must still call the function with the proper arguments. However,
+the person creating the function can then use the argument in the
+future without forcing modification of code that calls the function.
+This option of ignoring an argument in the list is also possible if
+you leave the name in, but you will get an annoying warning
+message about the value being unused every time you compile the
+function. The warning is eliminated if you remove the name
+
+Q3: Empty argument list
+If you have an empty argument list, you can declare it as func( ) in C++,
+which tells the compiler there are exactly zero arguments. You
+should be aware that this only means an empty argument list in
+C++. In C it means “an indeterminate number of arguments (which
+is a “hole” in C since it disables type checking in that case). In both
+C and C++, the declaration func(void);means an empty argument
+list. The void keyword means “nothing” in this case.
+
+Q4: Var-args
+when you don’t know how many arguments or what type of arguments you will have;
+this is called a variable argument list. This “uncertain argument list”
+is represented by ellipses (...). Defining a function with a variable
+argument list is significantly more complicated than defining a
+regular function. You can use a variable argument list for a function
+that has a fixed set of arguments if (for some reason) you want to
+disable the error checks of function prototyping. Because of this,
+you should restrict your use of variable argument lists to C and
+avoid them in C++ 
+
+Q5: Application portability
+many compilers include a lot of extra
+functions that make life even easier and are tempting to use, but are
+not part of the Standard C library. If you are certain you will never
+want to move the application to another platform (and who is
+certain of that?), go ahead –use those functions and make your life
+easier. If you want your application to be portable, you should
+restrict yourself to Standard library functions. If you must perform
+platform-specific activities, try to isolate that code in one spot so it
+can be changed easily when porting to another platform. In C++,
+platform-specific activities are often encapsulated in a class, which
+is the ideal solution.
+
+Q6: Operators
+You can think of operators as a special type of function (you’ll learn
+that C++ operator overloading treats operators precisely that way).
+An operator takes one or more arguments and produces a new
+value. The arguments are in a different form than ordinary function
+calls, but the effect is the same.
+
+Q7: Precedence
+Operator precedence defines the order in which an expression
+evaluates when several different operators are present. C and C++
+have specific rules to determine the order of evaluation. The easiest
+to remember is that multiplication and division happen before
+addition and subtraction. After that, if an expression isn’t
+transparent to you it probably won’t be for anyone reading the
+code, so you should use parentheses to make the order of
+evaluation explicit.
+
+Q8: Data types
+Data types define the way you use storage (memory) in the
+programs you write. By specifying a data type, you tell the
+compiler how to create a particular piece of storage, and also how
+to manipulate that storage.
+Data types can be built-in or abstract. A built-in data type is one
+that the compiler intrinsically understands, one that is wired
+directly into the compiler. The types of built-in data are almost
+identical in C and C++. In contrast, a user-defined data type is one
+that you or another programmer create as a class. These are
+commonly referred to as abstract data types. The compiler knows
+how to handle built-in types when it starts up; it “learns” how to
+handle abstract data types by reading header files containing class
+declarations 
+
+Q9: Basic built-in types
+The Standard C specification for built-in types (which C++ inherits)
+doesn’t say how many bits each of the built-in types must contain.
+Instead, it stipulates the minimum and maximum values that the
+built-in type must be able to hold. When a machine is based on
+binary, this maximum value can be directly translated into a
+minimum number of bits necessary to hold that value. However, if
+a machine uses, for example, binary-coded decimal (BCD) to
+represent numbers, then the amount of space in the machine
+required to hold the maximum numbers for each data type will be
+different. The minimum and maximum values that can be stored in
+the various data types are defined in the system header files
+limits.hand float.h (in C++ you will generally #include <climits>
+and <cfloat> instead).
+C and C++ have four basic built-in data types, described here for
+binary-based machines. A char is for character storage and uses a
+minimum of 8 bits (one byte) of storage, although it may be larger.
+An int stores an integral number and uses a minimum of two bytes
+of storage. The float and double types store floating-point
+numbers, usually in IEEE floating-point format. float is for single-
+precision floating point and double is for double-precision floating
+point.
+
+Q10: Specifiers
+Specifiers modify the meanings of the basic built-in types and
+expand them to a much larger set. There are four specifiers: long,
+short, signed, and unsigned.
+
+Q11: These are the basics of pointers: you can hold an address, and you
+can use that address to modify the original variable. But the 
+question still remains: why do you want to modify one variable
+using another variable as a proxy?
+For this introductory view of pointers, we can put the answer into
+two broad categories:
+1.To change “outside objects” from within a function. This is
+perhaps the most basic use of pointers.
+2.To achieve many other clever programming techniques,
+
+
+Q12: Void*
+ If you state that a pointer is a void*, it means that any type of address at all can
+be assigned to that pointer (whereas if you have an int*, you can
+assign only the address of an int variable to that pointer).
+Once you assign to a void* you lose any information about what
+type it is. This means that before you can use the pointer, you must
+cast it to the correct type.
+void* introduces a hole in the language’s type system. That is, it
+allows, or even promotes, the treatment of one type as another
+type. In the example above, I treat an int as an int by casting vp to
+an int*, but there’s nothing that says I can’t cast it to a char* or
+double*, which would modify a different amount of storage that
+had been allocated for the int, possibly crashing the program. In
+general, void pointers should be avoided, and used only in rare
+special cases,
+
+Q13:Scoping
+Scoping rules tell you where a variable is valid, where it is created,
+and where it gets destroyed (i.e., goes out of scope). The scope of a
+variable extends from the point where it is defined to the first
+closing brace that matches the closest opening brace before the
+variable was defined. That is, a scope is defined by its “nearest” set
+of braces.
+
+Q14: Specifying storage allocation
+When creating a variable, you have a number of options to specify
+the lifetime of the variable, how the storage is allocated for that
+variable, and how the variable is treated by the compiler.
+
+Q15: Global variables
+Global variables are defined outside all function bodies and are
+available to all parts of the program (even code in other files).
+Global variables are unaffected by scopes and are always available
+(i.e., the lifetime of a global variable lasts until the program ends). If
+the existence of a global variable in one file is declared using the
+extern keyword in another file, the data is available for use by the
+second file.
+
+Q16:Local variables
+Local variables occur within a scope; they are “local” to a function.
+They are often called automatic variables because they automatically
+come into being when the scope is entered and automatically go
+away when the scope closes. The keyword auto makes this explicit,
+but local variables default to auto so it is never necessary to declare
+something as an auto.
+
+Q17: Register variables
+A register variable is a type of local variable. The registerkeyword
+tells the compiler “Make accesses to this variable as fast as
+possible.” Increasing the access speed is implementation
+dependent, but, as the name suggests, it is often done by placing
+the variable in a register. There is no guarantee that the variable
+will be placed in a register or even that the access speed will
+increase. It is a hint to the compiler.
+There are restrictions to the use of registervariables. You cannot
+take or compute the address of a registervariable. A register
+variable can be declared only within a block (you cannot have
+global or static registervariables). You can, however, use a register
+variable as a formal argument in a function (i.e., in the argument
+list).In general, you shouldn’t try to second-guess the compiler’s
+optimizer, since it will probably do a better job than you can. Thus,
+the register keyword is best avoided.
+
+Q18: static
+The static keyword has several distinct meanings. Normally,
+variables defined local to a function disappear at the end of the
+function scope. When you call the function again, storage for the
+variables is created anew and the values are re-initialized. If you
+want a value to be extant throughout the life of a program, you can
+define a function’s local variable to be static and give it an initial
+value. The initialization is performed only the first time the
+function is called, and the data retains its value between function
+calls. This way, a function can “remember” some piece of
+information between function calls.You may wonder why a global variable isn’t used instead. The
+beauty of a static variable is that it is unavailable outside the scope
+of the function, so it can’t be inadvertently changed. This localizes
+errors.The second meaning of static is related to the first in the
+“unavailable outside a certain scope” sense. When static is applied
+to a function name or to a variable that is outside of all functions, it
+means “This name is unavailable outside of this file.” The function
+name or variable is local to the file; we say it has file scope.
+
+Q19: extern keyword
+The extern keyword has already been briefly described and
+demonstrated. It tells the compiler that a variable or a function
+exists, even if the compiler hasn’t yet seen it in the file currently
+being compiled.When the compiler encounters the declaration ‘extern int i ’,
+it knows that the definition for i must exist somewhere as a global
+variable. When the compiler reaches the definition of i, no other
+declaration is visible, so it knows it has found the same i declared
+earlier in the file. If you were to define i as static, you would be
+telling the compiler that i is defined globally (via the extern), but it
+also has file scope (via the static), so the compiler will generate an
+error.
+
+Q20: Linkage
+To understand the behavior of C and C++ programs, you need to
+know about linkage. In an executing program, an identifier is
+represented by storage in memory that holds a variable or a
+compiled function body. Linkage describes this storage as it is seen
+by the linker. There are two types of linkage: internal linkage and
+external linkage.
+Internal linkage means that storage is created to represent the
+identifier only for the file being compiled. Other files may use the
+same identifier name with internal linkage, or for a global variable,
+and no conflicts will be found by the linker – separate storage is
+created for each identifier. Internal linkage is specified by the
+keyword static in C and C++.External linkage means that a single piece of storage is created to
+represent the identifier for all files being compiled. The storage is
+created once, and the linker must resolve all other references to that
+storage. Global variables and function names have external linkage.
+These are accessed from other files by declaring them with the
+keyword extern. Variables defined outside all functions (with the
+exception of const in C++) and function definitions default to
+external linkage. You can specifically force them to have internal
+linkage using the static keyword. You can explicitly state that an
+identifier has external linkage by defining it with the extern
+keyword. Defining a variable or function with extern is not
+necessary in C, but it is sometimes necessary for const in C++.
+Automatic (local) variables exist only temporarily, on the stack,
+while a function is being called. The linker doesn’t know about
+automatic variables, and so these have no linkage.
+
+
+Q21: Constants
+In old (pre-Standard) C, if you wanted to make a constant, you had
+to use the preprocessor:
+#define PI 3.14159
+Everywhere you used PI, the value 3.14159 was substituted by the
+preprocessor (you can still use this method in C and C++).
+When you use the preprocessor to create constants, you place
+control of those constants outside the scope of the compiler. No
+type checking is performed on the name PI and you can’t take the
+address of PI (so you can’t pass a pointer or a reference to PI). PI
+cannot be a variable of a user-defined type. The meaning of PI lasts
+from the point it is defined to the end of the file; the preprocessor
+doesn’t recognize scoping.
+C++ introduces the concept of a named constant that is just like a
+variable, except that its value cannot be changed. The modifier
+const tells the compiler that a name represents a constant. Any data
+type, built-in or user-defined, may be defined as const. If you
+define something as const and then attempt to modify it, the
+compiler will generate an error.
+You must specify the type of a const, like this:
+const int x = 10;
+In Standard C and C++, you can use a named constant in an
+argument list, even if the argument it fills is a pointer or a reference
+(i.e., you can take the address of a const). A const has a scope, just
+like a regular variable, so you can “hide” a const inside a function
+and be sure that the name will not affect the rest of the program.
+The const was taken from C++ and incorporated into Standard C,
+albeit quite differently. In C, the compiler treats a const just like a
+variable that has a special tag attached that says “Don’t change
+me.” When you define a const in C, the compiler creates storage for
+it, so if you define more than one const with the same name in two
+different files (or put the definition in a header file), the linker will
+generate error messages about conflicts. The intended use of const
+in C is quite different from its intended use in C++ (in short, it’s
+nicer in C++).
+
+Q22: Constant Values
+In C++, a const must always have an initialization value (in C, this
+is not true). Constant values for built-in types are expressed as
+decimal, octal, hexadecimal, or floating-point numbers (sadly,
+binary numbers were not considered important), or as characters.
+In the absence of any other clues, the compiler assumes a constant
+value is a decimal number. The numbers 47, 0, and 1101 are all
+treated as decimal numbers.
+
+Q23: Volatile
+Whereas the qualifier const tells the compiler “This never changes”
+(which allows the compiler to perform extra optimizations), the
+qualifier volatiletells the compiler “You never know when this will
+change,” and prevents the compiler from performing any
+optimizations based on the stability of that variable. Use this
+keyword when you read some value outside the control of your
+code, such as a register in a piece of communication hardware. A
+volatilevariable is always read whenever its value is required,
+even if it was just read the line before.
+A special case of some storage being “outside the control of your
+code” is in a multithreaded program. If you’re watching a
+particular flag that is modified by another thread or process, that
+flag should be volatileso the compiler doesn’t make the
+assumption that it can optimize away multiple reads of the flag.
+Note that volatilemay have no effect when a compiler is not
+optimizing, but may prevent critical bugs when you start
+optimizing the code (which is when the compiler will begin looking
+for redundant reads).
+
+Q24: Operators
+All operators produce a value from their operands. This value is
+produced without modifying the operands, except with the
+assignment, increment, and decrement operators. Modifying an
+operand is called a side effect.
+
+Q25: Assignment
+Assignment is performed with the operator =. It means “Take the
+right-hand side (often called the rvalue) and copy it into the left-
+hand side (often called the lvalue).” An rvalue is any constant,
+variable, or expression that can produce a value, but an lvalue must
+be a distinct, named variable (that is, there must be a physical space
+in which to store data). For instance, you can assign a constant
+value to a variable (A = 4; ), but you cannot assign anything to
+constant value – it cannot be an lvalue (you can’t say 4 = A; ).
+
+
+Q26: Modulus Operator fact
+The modulus operator cannot be used with floating-point numbers.
+
+Q27: Bitwise Operator fact
+Bitwise operators work only with integral types: char, int and long)
+The bitwise functions are generally extremely efficient to use
+because they translate directly into assembly language statements.
+Sometimes a single C or C++ statement will generate a single line
+of assembly code.
+
+Q28: Ternary operator
+The ternary if-else is unusual because it has three operands. It is
+truly an operator because it produces a value, unlike the ordinary
+if-else statement. It consists of three expressions: if the first
+expression (followed by a ?) evaluates to true, the expression
+following the ? is evaluated and its result becomes the value
+produced by the operator.
+
+Q29: Comma Operator
+The comma is not restricted to separating variable names in
+multiple definitions, such as
+int i, j, k;
+Of course, it’s also used in function argument lists. However, it can
+also be used as an operator to separate expressions – in this case it
+produces only the value of the last expression. All the rest of the
+expressions in the comma-separated list are evaluated only for their
+side effects. In general, it’s best to avoid using the comma as anything other
+than a separator, since people are not used to seeing it as an
+operator.
+
+
+Q30: Common pitfalls when using operators
+One of the pitfalls when using operators is
+trying to get away without parentheses when you are even the least
+bit uncertain about how an expression will evaluate (consult your
+local C manual for the order of expression evaluation).
+
+
+Q31: Casting operators
+The word cast is used in the sense of “casting into a mold.” The
+compiler will automatically change one type of data into another if
+it makes sense. For instance, if you assign an integral value to a
+floating-point variable, the compiler will secretly call a function (or
+more probably, insert code) to convert the int to a float. Casting 
+allows you to make this type conversion explicit, or to force it when
+it wouldn’t normally happen.Casting is powerful, but it can cause headaches because in some
+situations it forces the compiler to treat data as if it were (for
+instance) larger than it really is, so it will occupy more space in
+memory; this can trample over other data. This usually occurs
+when casting pointers.
+
+Q32: C++ explicit casts
+Casts should be used carefully, because what you are actually
+doing is saying to the compiler “Forget type checking – treat it as
+this other type instead.” That is, you’re introducing a hole in the
+C++ type system and preventing the compiler from telling you that
+you’re doing something wrong with a type. What’s worse, the
+compiler believes you implicitly and doesn’t perform any other
+checking to catch errors. Once you start casting, you open yourself
+up for all kinds of problems. In fact, any program that uses a lot of
+casts should be viewed with suspicion, no matter how much you
+are told it simply “must” be done that way.Once you understand this and are presented with a buggy
+program, your first inclination may be to look for casts as culprits.
+But how do you locate C-style casts? They are simply type names
+inside of parentheses, and if you start hunting for such things you’ll
+discover that it’s often hard to distinguish them from the rest of
+your code.
+Standard C++ includes an explicit cast syntax that can be used to
+completely replace the old C-style casts (of course, C-style casts
+cannot be outlawed without breaking code, but compiler writers
+could easily flag old-style casts for you). The explicit cast syntax is
+such that you can easily find them, as you can see by their names:
+
+1: static_cast: For “well-behaved” and
+“reasonably well-behaved” casts,
+including things you might now
+do without a cast (such as an
+automatic type conversion).
+A static_cast is used for all conversions that are well-defined. These
+include “safe” conversions that the compiler would allow you to do
+without a cast and less-safe conversions that are nonetheless well-
+defined. The types of conversions covered by static_castinclude
+typical castless conversions, narrowing (information-losing)
+conversions, forcing a conversion from a void*, implicit type
+conversions, and static navigation of class hierarchies .
+Promoting from an int to a long
+or float is not a problem because the latter can always hold every
+value that an int can contain. Although it’s unnecessary, you can
+use static_cast to highlight these promotions.
+Converting back the other way , you can lose
+data because an int is not as “wide” as a long or a float; it won’t
+hold numbers of the same size. Thus these are called narrowing
+conversions. The compiler will still perform these, but will often give
+you a warning. You can eliminate this warning and indicate that
+you really did mean it using a cast.Assigning from a void* is not allowed without a cast in C++ (unlike
+C).  This is dangerous and requires that programmers
+know what they’re doing. The static_cast ,
+ at least, is easier to locate
+than the old standard cast when you’re hunting for bugs.
+These are automatic and require no casting, but again
+static_cast highlights the action in case you want to make it clear
+what’s happening or hunt for it later
+
+
+2: const_cast: To cast away const and/or
+volatile.
+If you want to convert from a const to a nonconst or from a volatile
+to a nonvolatile , you use const_cast .
+This is the only conversion allowed with const_cast ;
+if any other conversion is involved it must
+be done using a separate expression or you’ll get a compile-time
+error. If you take the address of a const object, you produce a pointer to a
+const, and this cannot be assigned to a nonconst pointer without a
+cast. The old-style cast will accomplish this, but the const_castis
+the appropriate one to use. The same holds true for volatile
+ .
+
+
+3: reinterpret_cast: To cast to a completely different
+meaning. The key is that you’ll need to cast back to the original
+type to use it safely. The type you
+cast to is typically used only for
+bit twiddling or some other
+mysterious purpose. This is the
+most dangerous of all the casts.
+This is the least safe of the casting mechanisms, and the one most
+likely to produce bugs. A reinterpret_cast
+pretends that an object is
+just a bit pattern that can be treated (for some dark purpose) as if it
+were an entirely different type of object. This is the low-level bit
+twiddling that C is notorious for. You’ll virtually always need to
+reinterpret_cast back to the original type (or otherwise treat the
+variable as its original type) before doing anything else with it.
+In this simple example, struct X just contains an array of int, but
+when you create one on the stack as in X x, the values of each of the
+ints are garbage (this is shown using the print( )function to display
+the contents of the struct). To initialize them, the address of the X is
+taken and cast to an int pointer, which is then walked through the
+array to set each int to zero. Notice how the upper bound for i is
+calculated by “adding” sz to xp; the compiler knows that you
+actually want sz pointer locations greater than xp and it does the
+correct pointer arithmetic for you.
+The idea of reinterpret_cast is
+ that when you use it, what you get is
+so foreign that it cannot be used for the type’s original purpose
+unless you cast it back. Here, we see the cast back to an X* in the
+call to print, but of course since you still have the original identifier
+you can also use that. But the xp is only useful as an int*, which is
+truly a “reinterpretation” of the original X.
+A reinterpret_cast  often indicates inadvisable and/or nonportable
+programming, but it’s available when you decide you have to use
+it.
+
+4: dynamic_cast: For type-safe downcasting 
+
+
+Q33: sizeof operator
+Note that sizeof is an operator, not a function. If you apply it to a
+type, it must be used with the parenthesized,
+but if you apply it to a variable you can use it without parentheses.
+
+
+Q34: The asm keyword
+This is an escape mechanism that allows you to write assembly
+code for your hardware within a C++ program. Often you’re able
+to reference C++ variables within the assembly code, which means
+you can easily communicate with your C++ code and limit the
+assembly code to that necessary for efficiency tuning or to use
+special processor instructions. The exact syntax that you must use
+when writing the assembly language is compiler-dependent and
+can be discovered in your compiler’s documentation
+
+
+Q35: Aliasing names with typedef
+This keyword promises more than it delivers: typedef suggests
+“type definition” when “alias” would probably have been a more
+accurate description, since that’s what it really does. The syntax is:
+typedef existing-type-description alias-name
+People often use typedef when data types get slightly complicated,
+just to prevent extra keystrokes. Here is a commonly-used typedef:
+typedef unsigned long ulong;
+Now if you say ulong the compiler knows that you mean unsigned
+long. You might think that this could as easily be accomplished
+using preprocessor substitution, but there are key situations in
+which the compiler must be aware that you’re treating a name as if
+it were a type, so typedef is essential.One place where typedef comes in handy is for pointer types. As
+previously mentioned, if you say:
+int* x, y;
+This actually produces an int* which is x and an int (not an int*)
+which is y. That is, the ‘*’ binds to the right, not the left. However,
+if you use a typedef:
+typedef int* IntPtr;
+IntPtr x, y;
+Then both x and y are of type int*.
+You can argue that it’s more explicit and therefore more readable to
+avoid typedefs for primitive types, and indeed programs rapidly
+become difficult to read when many typedefs are used. However,
+typedefs become especially important in C when used with struct.
+
+
+Q36: Enumerated data type
+An enumerated data type is a way of attaching names to numbers,
+thereby giving more meaning to anyone reading the code.You can also compare an int
+variable with a value in the enumeration.
+
+Q37: Type checking enumerations
+C’s enumerations are fairly primitive, simply associating integral
+values with names, but they provide no type checking. In C++, as
+you may have come to expect by now, the concept of type is
+fundamental, and this is true with enumerations. When you create
+a named enumeration, you effectively create a new type just as you
+do with a class: The name of your enumeration becomes a reserved
+word for the duration of that translation unit.
+In addition, there’s stricter type checking for enumerations in C++
+than in C. You’ll notice this in particular if you have an instance of
+an enumeration color called a. In C you can say a++, but in C++
+you can’t. This is because incrementing an enumeration is
+performing two type conversions, one of them legal in C++ and one
+of them illegal. First, the value of the enumeration is implicitly cast
+from a color to an int, then the value is incremented, then the int is
+cast back into a color. In C++ this isn’t allowed, because color is a
+distinct type and not equivalent to an int. This makes sense,
+because how do you know the increment of blue will even be in the
+list of colors? If you want to increment a color, then it should be a
+class (with an increment operation) and not an enum, because the
+class can be made to be much safer. Any time you write code that
+assumes an implicit conversion to an enum type, the compiler will
+flag this inherently dangerous activity.
+
+Q38: Saving memory with union
+Sometimes a program will handle different types of data using the
+same variable. In this situation, you have two choices: you can
+create a struct containing all the possible different types you might
+need to store, or you can use a union. A union piles all the data
+into a single space; it figures out the amount of space necessary for
+the largest item you’ve put in the union, and makes that the size of
+the union. Use a union to save memory.
+Anytime you place a value in a union, the value always starts in
+the same place at the beginning of the union, but only uses as much
+space as is necessary. Thus, you create a “super-variable” capable
+of holding any of the union variables. All the addresses of the
+union variables are the same (in a class or struct, the addresses are
+different).Try removing various elements and
+see what effect it has on the size of the union. Notice that it makes
+no sense to declare more than one instance of a single data type in a
+union (unless you’re just doing it to use a different name).
+Once you perform an assignment, the compiler doesn’t care what
+you do with the union. In the example above, you could assign a
+floating-point value to x:
+x.f = 2.222;
+and then send it to the output as if it were an int:
+cout << x.i;
+This would produce garbage.
+
+Q39: Arrays and Pointers
+The identifier of an array is unlike the identifiers for ordinary
+variables. For one thing, an array identifier is not an lvalue; you
+cannot assign to it. It’s really just a hook into the square-bracket
+syntax, and when you give the name of an array, without square
+brackets, what you get is the starting address of the array:
+When you run this program you’ll see that the two addresses
+(which will be printed in hexadecimal, since there is no cast to
+long) are the same.
+So one way to look at the array identifier is as a read-only pointer
+to the beginning of an array. And although we can’t change the
+array identifier to point somewhere else, we can create another
+pointer and use that to move around in the array. In fact, the
+square-bracket syntax works with regular pointers as well.
+The fact that naming an array produces its starting address turns
+out to be quite important when you want to pass an array to a
+function. If you declare an array as a function argument, what
+you’re really declaring is a pointer.  There are
+some other issues that this example reveals: arrays cannot be
+passed by value3, that is, you never automatically get a local copy
+of the array that you pass into a function. Thus, when you modify
+an array, you’re always modifying the outside object. This can be a
+bit confusing at first, if you’re expecting the pass-by-value
+provided with ordinary arguments.
+
+
+Q40: Debugging flags
+If you hard-wire debugging code into a program, you can run into
+problems. You start to get too much information, which makes the
+bugs difficult to isolate. When you think you’ve found the bug you
+start tearing out debugging code, only to find you need to put it
+back in again. You can solve these problems with two types of
+flags: preprocessor debugging flags and runtime debugging flags.
+
+Q41: Preprocessor debugging flags
+By using the preprocessor to #define one or more debugging flags
+(preferably in a header file), you can test a flag using an #ifdef
+statement and conditionally include debugging code. When you
+think your debugging is finished, you can simply #undef the
+flag(s) and the code will automatically be removed (and you’ll
+reduce the size and runtime overhead of your executable file).
+It is best to decide on names for debugging flags before you begin
+building your project so the names will be consistent. Preprocessor
+flags are traditionally distinguished from variables by writing them
+in all upper case. A common flag name is simply DEBUG (but be
+careful you don’t use NDEBUG, which is reserved in C). The
+sequence of statements might be:
+#define DEBUG // Probably in a header file
+//...
+#ifdef DEBUG // Check to see if flag is defined
+/* debugging code here */
+#endif // DEBUG
+Most C and C++ implementations will also let you #define and
+#undef flags from the compiler command line, so you can re-
+compile code and insert debugging information with a single
+command (preferably via the makefile, a tool that will be described
+shortly).
+
+Q42: Runtime debugging flags
+In some situations it is more convenient to turn debugging flags on
+and off during program execution, especially by setting them when
+the program starts up using the command line. Large programs are
+tedious to recompile just to insert debugging code.
+Although a debugging flag is one of the relatively few areas where
+it makes a lot of sense to use a global variable, there’s nothing that
+says it must be that way.
+
+Q43: Turning variables and expressions into strings
+When writing debugging code, it is tedious to write print
+expressions consisting of a character array containing the variable
+name, followed by the variable. Fortunately, Standard C includes
+the stringize operator ‘#’, which was used earlier in this chapter.
+When you put a # before an argument in a preprocessor macro, the
+preprocessor turns that argument into a character array. This,
+combined with the fact that character arrays with no intervening
+punctuation are concatenated into a single character array, allows
+you to make a very convenient macro for printing the values of
+variables during debugging:
+#define PR(x) cout << #x " = " << x << "\n";
+If you print the variable a by calling the macro PR(a), it will have
+the same effect as the code:
+cout << "a = " << a << "\n";
+You can see how a technique like this can quickly become
+indispensable, especially if you have no debugger (or must use
+multiple development environments). You can also insert an #ifdef
+to cause P(A) to be defined as “nothing” when you want to strip
+out debugging.
+
+Q44: C assert() macro
+ When you use assert( ) ,
+ you give it an argument that is an expression you are “asserting to be true.”
+The preprocessor generates code that will test the assertion. If the
+assertion isn’t true, the program will stop after issuing an error
+message telling you what the assertion was and that it failed
+When you are finished debugging, you can remove the code
+generated by the macro by placing the line:
+#define NDEBUG
+in the program before the inclusion of <cassert> ,
+ or by defining
+NDEBUG on the compiler command line. NDEBUG is a flag used
+in <cassert> to change the way code is generated by the macros.
+
+Q45: Function addresses and function pointer
+Once a function is compiled and loaded into the computer to be
+executed, it occupies a chunk of memory. That memory, and thus
+the function, has an address.
+C has never been a language to bar entry where others fear to tread.
+You can use function addresses with pointers just as you can use
+variable addresses. The declaration and use of function pointers
+looks a bit opaque at first, but it follows the format of the rest of the
+language.
+void (*funcPtr)();
+You may wonder why *funcPtrrequires parentheses. If you didn't
+use them, the compiler would see:
+void *funcPtr();
+You would be declaring a function (that returns a void*) rather
+than defining a variable. You can think of the compiler as going
+through the same process you do when it figures out what a
+declaration or definition is supposed to be. It needs those
+parentheses to “bump up against” so it goes back to the left and
+finds the ‘*’, instead of continuing to the right and finding the
+empty argument list.
+
+Q46: Function pointer table
+One of the more interesting constructs you can create is an array of
+pointers to functions. To select a function, you just index into the
+array and dereference the pointer. This supports the concept of
+table-driven code; instead of using conditionals or case statements,
+you select functions to execute based on a state variable (or a
+combination of state variables). This kind of design can be useful if
+you often add or delete functions from the table (or if you want to
+create or change such a table dynamically).
+
+
+
