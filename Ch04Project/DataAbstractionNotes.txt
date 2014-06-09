@@ -1,0 +1,354 @@
+DataAbstraction Notes
+==================================
+
+Q1: Problems using C Library
+There is one more important issue you should understand before
+we look at the general problems in creating a C library. Note that
+the CLib.h header file must be included in any file that refers to
+CStash because the compiler can’t even guess at what that
+structure looks like. However, it can guess at what a function looks
+like; this sounds like a feature but it turns out to be a major C
+pitfall.
+Although you should always declare functions by including a
+header file, function declarations aren’t essential in C. It’s possible
+in C (but not in C++) to call a function that you haven’t declared. A
+good compiler will warn you that you probably ought to declare a
+function first, but it isn’t enforced by the C language standard. This
+is a dangerous practice, because the C compiler can assume that a
+function that you call with an int argument has an argument list
+containing int, even if it may actually contain a float. This can
+produce bugs that are very difficult to find, as you will see.
+Each separate C implementation file (with an extension of .c) is a
+translation unit. That is, the compiler is run separately on each
+translation unit, and when it is running it is aware of only that unit.
+Thus, any information you provide by including header files is
+quite important because it determines the compiler’s
+understanding of the rest of your program. Declarations in header
+files are particularly important, because everywhere the header is
+included, the compiler will know exactly what to do. If, for
+example, you have a declaration in a header file that says void
+func(float) ,
+ the compiler knows that if you call that function with
+an integer argument, it should convert the int to a float as it passes
+the argument (this is called promotion). Without the declaration, the
+C compiler would simply assume that a function func(int)existed,
+it wouldn’t do the promotion, and the wrong data would quietly be
+passed into func( ).
+For each translation unit, the compiler creates an object file, with an
+extension of .o or .obj or something similar. These object files, along
+with the necessary start-up code, must be collected by the linker
+into the executable program. During linking, all the external
+references must be resolved. For example, in CLibTest.cpp
+ ,
+functions such as initialize( ) and fetch( )are declared (that is, the
+compiler is told what they look like) and used, but not defined.
+They are defined elsewhere, in CLib.cpp .
+ Thus, the calls in
+CLib.cppare external references. The linker must, when it puts all
+the object files together, take the unresolved external references and
+find the addresses they actually refer to. Those addresses are put
+into the executable program to replace the external references.
+It’s important to realize that in C, the external references that the
+linker searches for are simply function names, generally with an
+underscore in front of them. So all the linker has to do is match up
+the function name where it is called and the function body in the
+object file, and it’s done. If you accidentally made a call that the
+compiler interpreted as func(int)and there’s a function body for
+func(float)in some other object file, the linker will see _func in one
+place and _func in another, and it will think everything’s OK. The
+func( ) at the calling location will push an int onto the stack, and
+the func( ) function body will expect a float to be on the stack. If the
+function only reads the value and doesn’t write to it, it won’t blow
+up the stack. In fact, the float value it reads off the stack might even
+make some kind of sense. That’s worse because it’s harder to find
+the bug.
+One of the biggest obstacles, however, to using libraries in C is the
+problem of name clashes. C has a single name space for functions;
+that is, when the linker looks for a function name, it looks in a
+single master list. In addition, when the compiler is working on a
+translation unit, it can work only with a single function with a
+given name.
+Now suppose you decide to buy two libraries from two different
+vendors, and each library has a structure that must be initialized
+and cleaned up. Both vendors decided that initialize( ) and
+cleanup( )are good names. If you include both their header files in
+a single translation unit, what does the C compiler do? Fortunately,
+C gives you an error, telling you there’s a type mismatch in the two
+different argument lists of the declared functions. But even if you
+don’t include them in the same translation unit, the linker will still
+have problems. A good linker will detect that there’s a name clash,
+but some linkers take the first function name they find, by
+searching through the list of object files in the order you give them
+in the link list. (This can even be thought of as a feature because it
+allows you to replace a library function with your own version.)
+In either event, you can’t use two C libraries that contain a function
+with the identical name. To solve this problem, C library vendors
+will often prepend a sequence of unique characters to the beginning
+of all their function names. So initialize( ) and cleanup( ) might
+become CStash_initialize( and )
+ CStash_cleanup( . )This is a
+logical thing to do because it “decorates” the name of the struct the
+function works on with the name of the function.
+Variable names inside a struct do not clash with global variable
+names. So why not take advantage of this for function names, when
+those functions operate on a particular struct? That is, why not
+make functions members of structs?
+
+Q2: Some differences between C and C++
+There are several other things that are different between C and
+C++. First, the declarations in the header files are required by the
+compiler. In C++ you cannot call a function without declaring it
+first. The compiler will issue an error message otherwise. This is an
+important way to ensure that function calls are consistent between
+the point where they are called and the point where they are
+defined. By forcing you to declare the function before you call it,
+the C++ compiler virtually ensures that you will perform this
+declaration by including the header file. If you also include the
+same header file in the place where the functions are defined, then
+the compiler checks to make sure that the declaration in the header
+and the function definition match up. This means that the header
+file becomes a validated repository for function declarations and
+ensures that functions are used consistently throughout all
+translation units in the project.
+structures must always be declared before they are defined or used, and the most convenient
+place to put a structure definition is in a header file, except for
+those you intentionally hide in a file.
+whenever you are
+inside the member function of another struct, you can refer to any
+member (including another member function) by simply giving its
+name. The compiler will search through the local structure’s names
+before looking for a global version of that name. You’ll find that
+this feature means that not only is your code easier to write, it’s a
+lot easier to read.
+There’s a special keyword, called this, which produces the address of the struct.
+There’s one last item to mention. In C, you could assign a void* to
+any other pointer like this:
+int i = 10;
+void* vp = &i; // OK in both C and C++
+int* ip = vp; // Only acceptable in C
+and there was no complaint from the compiler. But in C++, this
+statement is not allowed. Why? Because C is not so particular about
+type information, so it allows you to assign a pointer with an
+unspecified type to a pointer with a specified type. Not so with
+C++. Type is critical in C++, and the compiler stamps its foot when
+there are any violations of type information. This has always been
+important, but it is especially important in C++ because you have
+member functions in structs. If you could pass pointers to structs
+around with impunity in C++, then you could end up calling a
+member function for a struct that doesn’t even logically exist for
+that struct! A real recipe for disaster. Therefore, while C++ allows
+the assignment of any type of pointer to a void* (this was the
+original intent of void*, which is required to be large enough to
+hold a pointer to any type), it will not allow you to assign a void
+pointer to any other type of pointer. A cast is always required to tell
+the reader and the compiler that you really do want to treat it as the
+destination type.
+One of the important goals for
+C++ is to compile as much existing C code as possible to allow for
+an easy transition to the new language. However, this doesn’t mean
+any code that C allows will automatically be allowed in C++. There
+are a number of things the C compiler lets you get away with that
+are dangerous and error-prone. . In fact, there are many situations in which you are
+trying to run down an error in C and just can’t find it, but as soon
+as you recompile the program in C++, the compiler points out the
+problem! In C, you’ll often find that you can get the program to
+compile, but then you have to get it to work. In C++, when the
+program compiles correctly, it often works, too! This is because the
+language is a lot stricter about type.
+One thing you’ll notice is that the variables are all defined “on the
+fly” (as introduced in the previous chapter). That is, they are
+defined at any point in the scope, rather than being restricted – as
+in C – to the beginning of the scope.
+
+Q3: Whats an Object?
+In C++, an object is just a variable, and the purest definition is “a
+region of storage” (this is a more specific way of saying, “an object
+must have a unique identifier,” which in the case of C++ is a
+unique memory address). It’s a place where you can store data, and
+it’s implied that there are also operations that can be performed on
+this data.
+
+Q4: Encapsulation and Abstract data type
+The ability to package data with functions allows you to create a
+new data type. This is often called encapsulation.
+Abstract data type allows us to abstract
+a concept from the problem space into the solution space. In
+addition, the C++ compiler treats it like a new data type.
+So the same level of type checking happens
+with abstract data types (sometimes called user-defined types) as
+with built-in types.
+
+Q5: Object oriented programming
+In fact, object-oriented programming can be summed up
+in a single phrase: sending messages to objects. Really, that’s all you
+do – create a bunch of objects and send messages to them. The trick,
+of course, is figuring out what your objects and messages are, but
+once you accomplish this the implementation in C++ is surprisingly
+straightforward.
+
+Q6: Size of an object
+A question that often comes up in seminars is, “How big is an
+object, and what does it look like?” The answer is “about what you
+expect from a C struct.” In fact, the code the C compiler produces
+for a C struct (with no C++ adornments) will usually look exactly
+the same as the code produced by a C++ compiler. This is
+reassuring to those C programmers who depend on the details of
+size and layout in their code, and for some reason directly access
+structure bytes instead of using identifiers (relying on a particular
+size and layout for a structure is a nonportable activity).
+The size of a struct is the combined size of all of its members.
+Sometimes when the compiler lays out a struct, it adds extra bytes
+to make the boundaries come out neatly – this may increase
+execution efficiency
+. struct Bis
+something of an anomaly because it is a struct with no data
+members. In C, this is illegal, but in C++ we need the option of
+creating a struct whose sole task is to scope function names, so it is
+allowed. Still, the result produced by the second print statement is
+a somewhat surprising nonzero value. In early versions of the
+language, the size was zero, but an awkward situation arises when
+you create such objects: They have the same address as the object
+created directly after them, and so are not distinct. One of the
+fundamental rules of objects is that each object must have a unique
+address, so structures with no data members will always have
+some minimum nonzero size.
+The last two sizeof statements show you that the size of the
+structure in C++ is the same as the size of the equivalent version in
+C. C++ tries not to add any unnecessary overhead.
+
+Q7: Header file etiquette
+When you create a struct containing member functions, you are
+creating a new data type. In general, you want this type to be easily
+accessible to yourself and others. In addition, you want to separate
+the interface (the declaration) from the implementation (the
+definition of the member functions) so the implementation can be
+changed without forcing a re-compile of the entire system. You
+achieve this end by putting the declaration for your new type in a
+header file.
+When I first learned to program in C, the header file was a mystery
+to me. Many C books don’t seem to emphasize it, and the compiler
+didn’t enforce function declarations, so it seemed optional most of
+the time, except when structures were declared. In C++ the use of
+header files becomes crystal clear. They are virtually mandatory for
+easy program development, and you put very specific information
+in them: declarations. The header file tells the compiler what is
+available in your library. You can use the library even if you only
+possess the header file along with the object file or library file; you
+don’t need the source code for the cpp file. The header file is where
+the interface specification is stored.
+
+Q8: Importance of Header files
+When using a function from a library, C allows you the option of
+ignoring the header file and simply declaring the function by hand.
+In the past, people would sometimes do this to speed up the
+compiler just a bit by avoiding the task of opening and including
+the file (this is usually not an issue with modern compilers).
+This practice can cause subtle problems. If you declare functions by
+hand, in one file you may make a mistake. Since the compiler sees
+only your hand-declaration in that file, it may be able to adapt to
+your mistake. The program will then link correctly, but the use of
+the function in that one file will be faulty. This is a tough error to
+find, and is easily avoided by using a header file.
+If you place all your function declarations in a header file, and
+include that header everywhere you use the function and where
+you define the function, you ensure a consistent declaration across
+the whole system. You also ensure that the declaration and the
+definition match by including the header in the definition file.
+If a struct is declared in a header file in C++, you must include the
+header file everywhere a struct is used and where struct member
+functions are defined. The C++ compiler will give an error message
+if you try to call a regular function, or to call or define a member
+function, without declaring it first. By enforcing the proper use of
+header files, the language ensures consistency in libraries, and
+reduces bugs by forcing the same interface to be used everywhere.
+The header is a contract between you and the user of your library.
+The contract describes your data structures, and states the
+arguments and return values for the function calls. It says, “Here’s
+what my library does.” The user needs some of this information to
+develop the application and the compiler needs all of it to generate
+proper code. The user of the struct simply includes the header file,
+creates objects (instances) of that struct, and links in the object
+module or library (i.e.: the compiled code).
+The compiler enforces the contract by requiring you to declare all
+structures and functions before they are used and, in the case of
+member functions, before they are defined. Thus, you’re forced to
+put the declarations in the header and to include the header in the
+file where the member functions are defined and the file(s) where
+they are used. Because a single header file describing your library is
+included throughout the system, the compiler can ensure
+consistency and prevent errors.
+
+Q9: Header file issues
+There are certain issues that you must be aware of in order to
+organize your code properly and write effective header files. The
+first issue concerns what you can put into header files. The basic
+rule is “only declarations,” that is, only information to the compiler
+but nothing that allocates storage by generating code or creating
+variables. This is because the header file will typically be included
+in several translation units in a project, and if storage for one
+identifier is allocated in more than one place, the linker will come
+up with a multiple definition error (this is C++’s one definition rule:
+You can declare things as many times as you want, but there can be
+only one actual definition for each thing).
+This rule isn’t completely hard and fast. If you define a variable
+that is “file static” (has visibility only within a file) inside a header
+file, there will be multiple instances of that data across the project,
+but the linker won’t have a collision3 . Basically, you don’t want to
+do anything in the header file that will cause an ambiguity at link
+time.
+The second header-file issue is this: when you put a struct
+declaration in a header file, it is possible for the file to be included
+more than once in a complicated program.The problem of redeclaration comes up quite a bit in C++ because
+each data type (structure with functions) generally has its own
+header file, and you have to include one header in another if you
+want to create another data type that uses the first one. In any cpp
+file in your project, it’s likely that you’ll include several files that
+include the same header file. During a single compilation, the
+compiler can see the same header file several times. Unless you do
+something about it, the compiler will see the redeclaration of your
+structure and report a compile-time error. To solve the problem,
+you need to know a bit more about the preprocessor.
+
+Q10: Standard for header files
+In each header file that contains a structure, you should first check
+to see if this header has already been included in this particular cpp
+file. You do this by testing a preprocessor flag. If the flag isn’t set,
+the file wasn’t included and you should set the flag (so the
+structure can’t get re-declared) and declare the structure. If the flag
+was set then that type has already been declared so you should just
+ignore the code that declares it. Here’s how the header file should
+look:
+#ifndef HEADER_FLAG
+#define HEADER_FLAG
+// Type declaration here...
+#endif // HEADER_FLAG
+As you can see, the first time the header file is included, the
+contents of the header file (including your type declaration) will be
+included by the preprocessor. All the subsequent times it is
+included – in a single compilation unit – the type declaration will
+be ignored. The name HEADER_FLAG can be any unique name,
+but a reliable standard to follow is to capitalize the name of the
+header file and replace periods with underscores (leading
+underscores, however, are reserved for system names)
+These preprocessor statements that prevent multiple inclusion are
+often referred to as include guards.
+
+Q11: Namespaces in headers
+You’ll notice that using directives are present in nearly all the cpp
+files  usually in the form:
+using namespace std;
+Since std is the namespace that surrounds the entire Standard C++
+library, this particular using directive allows the names in the
+Standard C++ library to be used without qualification. However,
+you’ll virtually never see a using directive in a header file (at least,
+not outside of a scope). The reason is that the using directive
+eliminates the protection of that particular namespace, and the
+effect lasts until the end of the current compilation unit. If you put
+a using directive (outside of a scope) in a header file, it means that
+this loss of “namespace protection” will occur with any file that
+includes this header, which often means other header files. Thus, if
+you start putting using directives in header files, it’s very easy to
+end up “turning off” namespaces practically everywhere, and
+thereby neutralizing the beneficial effects of namespaces.
+In short: don’t put using directives in header files.
+
