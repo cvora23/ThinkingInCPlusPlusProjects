@@ -1,0 +1,261 @@
+FunctionOverloadingAndDefaultArgs
+=============================================
+
+Q1: Need for function overloading
+A problem arises when mapping the concept of nuance in human
+language onto a programming language. Often, the same word
+expresses a number of different meanings, depending on context.
+That is, a single word has multiple meanings – it’s overloaded.
+Human languages have built-in redundancy, so even if you miss a
+few words, you can still determine the meaning. We don’t need
+unique identifiers – we can deduce meaning from context.
+Most programming languages, however, require that you have a
+unique identifier for each function. If you have three different types
+of data that you want to print: int, char, and float, you generally
+have to create three different function names, for example,
+print_int( , )
+ print_char( ) ,
+ and print_float( . ) This loads extra work
+on you as you write the program, and on readers as they try to
+understand it.
+In C++, another factor forces the overloading of function names:
+the constructor. Because the constructor’s name is predetermined
+by the name of the class, it would seem that there can be only one
+constructor. But what if you want to create an object in more than
+one way? For example, suppose you build a class that can initialize
+itself in a standard way and also by reading information from a file.
+You need two constructors, one that takes no arguments (the
+default constructor) and one that takes a string as an argument,
+which is the name of the file to initialize the object. Both are
+constructors, so they must have the same name: the name of the
+class. Thus, function overloading is essential to allow the same
+function name – the constructor in this case – to be used with
+different argument types.
+Although function overloading is a must for constructors, it’s a
+general convenience and can be used with any function, not just
+class member functions. In addition, function overloading means
+that if you have two libraries that contain functions of the same
+name, they won’t conflict as long as the argument lists are different.
+Function overloading allows you to use the same name for different
+functions, but there’s a second way to make calling a function more
+convenient. What if you’d like to call the same function in different
+ways? When functions have long argument lists, it can become
+tedious to write (and confusing to read) the function calls when
+most of the arguments are the same for all the calls. A commonly
+used feature in C++ is called default arguments. A default argument
+is one the compiler inserts if it isn’t specified in the function call.
+Thus, the calls f(“hello”)
+ , f(“hi”, 1)
+ , and f(“howdy”, 2, ‘c’)
+ can all
+be calls to the same function. They could also be calls to three
+overloaded functions, but when the argument lists are this similar,
+you’ll usually want similar behavior, which calls for a single
+function.
+
+Q2: Name decoration
+It was suggested that the names are simply
+the class name “decorated” together with the function name, so the
+internal names the compiler uses might be _f and _X_f. However, it
+turns out that function name decoration involves more than the
+class name.
+Here’s why. Suppose you want to overload two function names
+voidvoidprint(char);
+print(float);
+It doesn’t matter whether they are both inside a class or at the
+global scope. The compiler can’t generate unique internal
+identifiers if it uses only the scope of the function names. You’d end
+up with _print in both cases. The idea of an overloaded function is
+that you use the same function name, but different argument lists.
+Thus, for overloading to work the compiler must decorate the
+function name with the names of the argument types. The functions
+above, defined at global scope, produce internal names that might
+look something like _print_char and _print_float. It’s worth noting
+there is no standard for the way names must be decorated by the
+compiler, so you will see very different results from one compiler
+to another. (You can see what it looks like by telling the compiler to
+generate assembly-language output.) This, of course, causes
+problems if you want to buy compiled libraries for a particular
+compiler and linker – but even if name decoration were
+standardized, there would be other roadblocks because of the way
+different compilers generate code.
+That’s really all there is to function overloading: you can use the
+same function name for different functions as long as the argument
+lists are different. The compiler decorates the name, the scope, and
+the argument lists to produce internal names for it and the linker to
+use.
+
+
+Q3: Overloading on return values
+It’s common to wonder, “Why just scopes and argument lists? Why
+not return values?” It seems at first that it would make sense to also
+decorate the return value with the internal function name. Then
+you could overload on return values, as well:
+void f();
+int f();
+This works fine when the compiler can unequivocally determine
+the meaning from the context, as in int x = f( );
+However, in C you’ve always been able to call a function and ignore the return
+value (that is, you can call the function for its side effects). How can
+the compiler distinguish which call is meant in this case? Possibly
+worse is the difficulty the reader has in knowing which function
+call is meant. Overloading solely on return value is a bit too subtle,
+and thus isn’t allowed in C++.
+
+
+Q4: Type-safe linkage
+There is an added benefit to all of this name decoration. A
+particularly sticky problem in C occurs when the client
+programmer misdeclares a function, or, worse, a function is called
+without declaring it first, and the compiler infers the function
+declaration from the way it is called. Sometimes this function
+declaration is correct, but when it isn’t, it can be a difficult bug to
+find.
+Because all functions must be declared before they are used in C++,
+the opportunity for this problem to pop up is greatly diminished.
+The C++ compiler refuses to declare a function automatically for
+you, so it’s likely that you will include the appropriate header file.
+However, if for some reason you still manage to misdeclare a
+function, either by declaring by hand or including the wrong
+header file (perhaps one that is out of date), the name decoration
+provides a safety net that is often referred to as type-safe linkage.
+Even though you can see that the function is actually f(int), the
+compiler doesn’t know this because it was told – through an
+explicit declaration – that the function is f(char). Thus, the
+compilation is successful. In C, the linker would also be successful,
+but not in C++. Because the compiler decorates the names, the
+definition becomes something like f_int, whereas the use of the
+function is f_char. When the linker tries to resolve the reference to
+f_char, it can only find f_int, and it gives you an error message.
+This is type-safe linkage. Although the problem doesn’t occur all
+that often, when it does it can be incredibly difficult to find,
+especially in a large project. This is one of the cases where you can
+easily find a difficult error in a C program simply by running it
+through the C++ compiler.
+
+Q5: Cool facts about Unions
+As you’ve seen, the only difference between struct and class in C++
+is that struct defaults to public and class defaults to private. A
+struct can also have constructors and destructors, as you might
+expect. But it turns out that a union can also have a constructor,
+destructor, member functions, and even access control.
+You might think from the code above that the only difference
+between a union and a class is the way the data is stored (that is,
+the int and float are overlaid on the same piece of storage).
+However, a union cannot be used as a base class during
+inheritance, which is quite limiting from an object-oriented design
+standpoint.Although the member functions civilize access to the union
+somewhat, there is still no way to prevent the client programmer
+from selecting the wrong element type once the union is initialized.
+
+Q5.A: Type safe unions
+Although the member functions civilize access to the union
+somewhat, there is still no way to prevent the client programmer
+from selecting the wrong element type once the union is initialized.
+In the example above, you could say X.read_float( ) even though it
+is inappropriate. However, a “safe” union can be encapsulated in a
+class.The reason for using a union in the first place is to save
+space, and the addition of vartype takes up quite a bit of space
+relative to the data in the union, so the savings are effectively
+eliminated. There are a couple of alternatives to make this scheme
+workable. If the vartype controlled more than one union instance –
+if they were all the same type – then you’d only need one for the
+group and it wouldn’t take up more space. A more useful approach
+is to have #ifdefs around all the vartype code, which can then
+guarantee things are being used correctly during development and
+testing. For shipping code, the extra space and time overhead can
+be eliminated.
+ 
+
+Q6: Untagged enums
+Enum has no type name (it is an untagged
+enumeration). This is acceptable if you are going to immediately
+define instances of the enum, as is done here. There is no need to
+refer to the enum’s type name in the future, so the type name is
+optional.
+
+Q7: Anonymous union
+The union has no type name and no variable name. This is called
+an anonymous union, and creates space for the union but doesn’t
+require accessing the union elements with a variable name and the
+dot operator. For instance, if your anonymous union is:
+//: C07:AnonymousUnion.cpp
+int main() {
+union {
+int i;
+float f;
+};
+// Access members without using qualifiers:
+i = 12;
+f = 1.22;
+} ///:~
+Note that you access members of an anonymous union just as if
+they were ordinary variables. The only difference is that both
+variables occupy the same space. If the anonymous union is at file
+scope (outside all functions and classes) then it must be declared
+static so it has internal linkage.
+
+
+Q8: Default Arguments
+C++ provides a remedy with default arguments. A default argument
+is a value given in the declaration that the compiler automatically
+inserts if you don’t provide a value in the function call.
+Default arguments are a convenience, as function overloading is a
+convenience. Both features allow you to use a single function name
+in different situations. The difference is that with default arguments
+the compiler is substituting arguments when you don’t want to put
+them in yourself. The preceding example is a good place to use
+default arguments instead of function overloading; otherwise you
+end up with two or more functions that have similar signatures and
+similar behaviors. If the functions have very different behaviors, it
+doesn’t usually make sense to use default arguments (for that
+matter, you might want to question whether two functions with
+very different behaviors should have the same name).
+There are two rules you must be aware of when using default
+arguments. First, only trailing arguments may be defaulted. That is,
+you can’t have a default argument followed by a non-default
+argument. Second, once you start using default arguments in a
+particular function call, all the subsequent arguments in that
+function’s argument list must be defaulted (this follows from the
+first rule).
+Default arguments are only placed in the declaration of a function
+(typically placed in a header file). The compiler must see the
+default value before it can use it. Sometimes people will place the
+commented values of the default arguments in the function
+definition, for documentation purposes
+void fn(int x /* = 0 */) { // ...
+An especially important use of default arguments is when you start
+out with a function with a set of arguments, and after it’s been used
+for a while you discover you need to add arguments. By defaulting
+all the new arguments, you ensure that all client code using the
+previous interface is not disturbed.
+
+Q9: Placeholder arguments
+Arguments in a function declaration can be declared without
+identifiers. When these are used with default arguments, it can look
+a bit funny. You can end up with
+void f(int x, int = 0, float = 1.1);
+In C++ you don’t need identifiers in the function definition, either:
+void f(int x, int, float flt) { /* ... */ }
+In the function body, x and flt can be referenced, but not the
+middle argument, because it has no name. Function calls must still
+provide a value for the placeholder, though: f(1) or f(1,2,3.0). 
+This syntax allows you to put the argument in as a placeholder without
+using it. The idea is that you might want to change the function
+definition to use the placeholder later, without changing all the
+code where the function is called. Of course, you can accomplish
+the same thing by using a named argument, but if you define the
+argument for the function body without using it, most compilers
+will give you a warning message, assuming you’ve made a logical
+error. By intentionally leaving the argument name out, you
+suppress this warning.
+More important, if you start out using a function argument and
+later decide that you don’t need it, you can effectively remove it
+without generating warnings, and yet not disturb any client code
+that was calling the previous version of the function.
+
+Q10: Chosing either default argumetns or overloading
+Both function overloading and default arguments provide a
+convenience for calling function names. However, it can seem
+confusing at times to know which technique to use.
+  
