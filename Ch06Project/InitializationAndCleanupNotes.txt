@@ -1,0 +1,160 @@
+InitializationAndCleanup
+======================================
+
+Q1:Guranteed Initialization with constructor
+In C++, initialization is too important to leave to the client
+programmer. The class designer can guarantee initialization of
+every object by providing a special function called the constructor. If
+a class has a constructor, the compiler automatically calls that
+constructor at the point an object is created, before client
+programmers can get their hands on the object. The constructor call
+isn’t even an option for the client programmer; it is performed by
+the compiler at the point the object is defined.
+The next challenge is what to name this function. There are two
+issues. The first is that any name you use is something that can
+potentially clash with a name you might like to use as a member in
+the class. The second is that because the compiler is responsible for
+calling the constructor, it must always know which function to call.
+The solution Stroustrup chose seems the easiest and most logical:
+the name of the constructor is the same as the name of the class. It
+makes sense that such a function will be called automatically on
+initialization.In C++, definition and initialization are
+unified concepts – you can’t have one without the other.
+Both the constructor and destructor are very unusual types of
+functions: they have no return value. This is distinctly different
+from a void return value, in which the function returns nothing but
+you still have the option to make it something else. Constructors
+and destructors return nothing and you don’t have an option. The
+acts of bringing an object into and out of the program are special,
+like birth and death, and the compiler always makes the function
+calls itself, to make sure they happen. If there were a return value,
+and if you could select your own, the compiler would somehow
+have to know what to do with the return value, or the client
+programmer would have to explicitly call constructors and
+destructors, which would eliminate their safety.
+
+Q2:Guaranteed cleanup with the destructor
+As a C programmer, you often think about the importance of
+initialization, but it’s rarer to think about cleanup. After all, what
+do you need to do to clean up an int? Just forget about it. However,
+with libraries, just “letting go” of an object once you’re done with it
+is not so safe. What if it modifies some piece of hardware, or puts
+something on the screen, or allocates storage on the heap? If you
+just forget about it, your object never achieves closure upon its exit
+from this world. In C++, cleanup is as important as initialization
+and is therefore guaranteed with the destructor. the destructor never has any arguments because
+destruction never needs any options.The destructor is called automatically by the compiler when the
+object goes out of scope. You can see where the constructor gets
+called by the point of definition of the object, but the only evidence
+for a destructor call is the closing brace of the scope that surrounds
+the object. Yet the destructor is still called, even when you use goto
+to jump out of a scope. (goto still exists in C++ for backward
+compatibility with C and for the times when it comes in handy.)
+You should note that a nonlocal goto, implemented by the Standard
+C library functions setjmp( )and longjmp( )
+ , doesn’t cause
+destructors to be called. (This is the specification, even if your
+compiler doesn’t implement it that way. Relying on a feature that
+isn’t in the specification means your code is nonportable.)
+ 
+ 
+Q3: Defining Variables
+In general, you should define variables as close to their point of use
+as possible, and always initialize them when they are defined. (This
+is a stylistic suggestion for built-in types, where initialization is
+optional.) This is a safety issue. By reducing the duration of the
+variable’s availability within the scope, you are reducing the chance
+it will be misused in some other part of the scope. In addition,
+readability is improved because the reader doesn’t have to jump
+back and forth to the beginning of the scope to know the type of a
+variable.
+
+
+Q4: Storage allocation for C++ objects
+A variable can now be defined at any point in a scope, so it might
+seem that the storage for a variable may not be defined until its
+point of definition. It’s actually more likely that the compiler will
+follow the practice in C of allocating all the storage for a scope at
+the opening brace of that scope. It doesn’t matter because, as a
+programmer, you can’t access the storage (a.k.a. the object) until it
+has been defined4. Although the storage is allocated at the
+beginning of the block, the constructor call doesn’t happen until the
+sequence point where the object is defined because the identifier
+isn’t available until then. The compiler even checks to make sure
+that you don’t put the object definition (and thus the constructor
+call) where the sequence point only conditionally passes through it,
+such as in a switch statement or somewhere a goto can jump past
+it.
+
+Q5: Aggregate Initialization
+An aggregate is just what it sounds like: a bunch of things clumped
+together. This definition includes aggregates of mixed types, like
+structs and classes. An array is an aggregate of a single type.
+Initializing aggregates can be error-prone and tedious. C++
+aggregate initialization makes it much safer. When you create an
+object that’s an aggregate, all you must do is make an assignment,
+and the initialization will be taken care of by the compiler. This
+assignment comes in several flavors, depending on the type of
+aggregate you’re dealing with, but in all cases the elements in the
+assignment must be surrounded by curly braces.
+. For an array of
+built-in types this is quite simple:
+int a[5] = { 1, 2, 3, 4, 5 };
+If you try to give more initializers than there are array elements, the
+compiler gives an error message. But what happens if you give
+fewer initializers? For example:
+int b[6] = {0};
+Here, the compiler will use the first initializer for the first array
+element, and then use zero for all the elements without initializers.
+Notice this initialization behavior doesn’t occur if you define an
+array without a list of initializers. So the expression above is a
+succinct way to initialize an array to zero, without using a for loop,
+and without any possibility of an off-by-one error (Depending on
+the compiler, it may also be more efficient than the for loop.)
+A second shorthand for arrays is automatic counting, in which you
+let the compiler determine the size of the array based on the
+number of initializers:
+int c[] = { 1, 2, 3, 4 };
+Now if you decide to add another element to the array, you simply
+add another initializer. If you can set your code up so it needs to be
+changed in only one spot, you reduce the chance of errors during
+modification. But how do you determine the size of the array? The
+expression sizeof c / sizeof *c
+ (size of the entire array divided by
+the size of the first element) does the trick in a way that doesn’t
+need to be changed if the array size changes5:
+If you have an array of such objects, you can initialize them by
+using a nested set of curly braces for each object:
+If any of the data members are private (which is typically the case
+for a well-designed class in C++), or even if everything’s public but
+there’s a constructor, things are different. In the examples above,
+the initializers are assigned directly to the elements of the
+aggregate, but constructors are a way of forcing initialization to
+occur through a formal interface. Here, the constructors must be
+called to perform the initialization. So if you have a struct that
+looks like this.
+Any time you have a constructor, whether it’s a struct with all members public or
+a class with private data members, all the initialization must go
+through the constructor, even if you’re using aggregate
+initialization.
+
+Q6: Default Constructor
+A default constructor is one that can be called with no arguments. A
+default constructor is used to create a “vanilla object,” but it’s also
+important when the compiler is told to create an object but isn’t
+given any details.Remember, if you have a constructor, the compiler ensures that
+construction always happens, regardless of the situation.
+The default constructor is so important that if (and only if) there are
+no constructors for a structure (struct or class), the compiler will
+automatically create one for you.You might think that the compiler-synthesized constructor should
+do some intelligent initialization, like setting all the memory for the
+object to zero. But it doesn’t – that would add extra overhead but
+be out of the programmer’s control. If you want the memory to be
+initialized to zero, you must do it yourself by writing the default
+constructor explicitly.
+Although the compiler will create a default constructor for you, the
+behavior of the compiler-synthesized constructor is rarely what
+you want. You should treat this feature as a safety net, but use it
+sparingly. In general, you should define your constructors
+explicitly and not allow the compiler to do it for you.
+ 
