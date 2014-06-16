@@ -1,0 +1,135 @@
+
+Hiding the Implementation
+======================================
+
+Q1: Why is controlling access to members important?
+There are two reasons for controlling access to members. The first is
+to keep the client programmer’s hands off tools they shouldn’t
+touch, tools that are necessary for the internal machinations of the
+data type, but not part of the interface the client programmer needs
+to solve their particular problems. This is actually a service to client
+programmers because they can easily see what’s important to them
+and what they can ignore.
+The second reason for access control is to allow the library designer
+to change the internal workings of the structure without worrying
+about how it will affect the client programmer.
+If the interface and implementation are clearly
+separated and protected, you can accomplish this and require only
+a relink by the client programmer.
+
+Q2: Friends
+What if you want to explicitly grant access to a function that isn’t a
+member of the current structure? This is accomplished by declaring
+that function a friend inside the structure declaration. It’s important
+that the friend declaration occurs inside the structure declaration
+because you (and the compiler) must be able to read the structure
+declaration and see every rule about the size and behavior of that
+data type.You can declare a global function as a friend, and you can also
+declare a member function of another structure, or even an entire
+structure, as a friend. The class definition gives you an audit trail, so you can see from
+looking at the class which functions have permission to modify the
+private parts of the class. If a function is a friend, it means that it
+isn’t a member, but you want to give permission to modify private
+data anyway, and it must be listed in the class definition so
+everyone can see that it’s one of the privileged functions.
+
+
+Q3: Nested Friends
+Making a structure nested doesn’t automatically give it access to
+private members. To accomplish this, you must follow a particular
+form: first, declare (without defining) the nested structure, then
+declare it as a friend, and finally define the structure. The structure
+definition must be separate from the friend declaration, otherwise
+it would be seen by the compiler as a non-member. 
+
+Q4: Hybrid nature of C++ OOP
+C++ is a hybrid object-oriented language, not a pure one, and
+friend was added to get around practical problems that crop up.
+It’s fine to point out that this makes the language less “pure,”
+because C++ is designed to be pragmatic, not to aspire to an
+abstract ideal.
+
+Q5: Some details about access specifiers
+When you start using access specifiers, however, you’ve moved
+completely into the C++ realm, and things change a bit. Within a
+particular “access block” (a group of declarations delimited by
+access specifiers), the variables are guaranteed to be laid out
+contiguously, as in C. However, the access blocks may not appear
+in the object in the order that you declare them. Although the
+compiler will usually lay the blocks out exactly as you see them,
+there is no rule about it, because a particular machine architecture
+and/or operating environment may have explicit support for
+private and protectedthat might require those blocks to be placed
+in special memory locations. The language specification doesn’t
+want to restrict this kind of advantage.
+Access specifiers are part of the structure and don’t affect the
+objects created from the structure. All of the access specification
+information disappears before the program is run; generally this
+happens during compilation. In a running program, objects become
+“regions of storage” and nothing more. If you really want to, you
+can break all the rules and access the memory directly, as you can
+in C. C++ is not designed to prevent you from doing unwise things.
+It just provides you with a much easier, highly desirable
+alternative. The real value of access control is to prevent you from crossing boundaries during
+development. In fact, the compiler is the only thing that knows
+about the protection level of class members. There is no access
+control information mangled into the member name that carries
+through to the linker. All the protection checking is done by the
+compiler; it has vanished by runtime.
+
+
+Q6: Partial Implementation Hiding
+Access control in C++ allows you to separate interface from
+implementation, but the implementation hiding is only partial. The
+compiler must still see the declarations for all parts of an object in
+order to create and manipulate it properly. You could imagine a
+programming language that requires only the public interface of an
+object and allows the private implementation to be hidden, but C++
+performs type checking statically (at compile time) as much as
+possible. This means that you’ll learn as early as possible if there’s
+an error. It also means that your program is more efficient.
+However, including the private implementation has two effects: the
+implementation is visible even if you can’t easily access it, and it
+can cause needless recompilation.
+
+Q7: Hiding the implementation technique
+Some projects cannot afford to have their implementation visible to
+the client programmer. It may show strategic information in a
+library header file that the company doesn’t want available to
+competitors. You may be working on a system where security is an
+issue – an encryption algorithm, for example – and you don’t want
+to expose any clues in a header file that might help people to crack
+the code. Or you may be putting your library in a “hostile”
+environment, where the programmers will directly access the
+private components anyway, using pointers and casting. In all
+these situations, it’s valuable to have the actual structure compiled
+inside an implementation file rather than exposed in a header file.
+
+
+Q8: Reducing recompilation
+The project manager in your programming environment will cause
+a recompilation of a file if that file is touched (that is, modified) or if
+another file it’s dependent upon – that is, an included header file –
+is touched. This means that any time you make a change to a class,
+whether it’s to the public interface or to the private member
+declarations, you’ll force a recompilation of anything that includes
+that header file. This is often referred to as the fragile base-class
+problem. For a large project in its early stages this can be very
+unwieldy because the underlying implementation may change
+often; if the project is very big, the time for compiles can prohibit
+rapid turnaround.
+The technique to solve this is sometimes called handle classes or the
+“Cheshire cat”2 – everything about the implementation disappears
+except for a single pointer, the “smile.” The pointer refers to a
+structure whose definition is in the implementation file along with
+all the member function definitions. Thus, as long as the interface is
+unchanged, the header file is untouched. The implementation can
+change at will, and only the implementation file needs to be
+recompiled and relinked with the project.The only thing the client programmer can access is the public
+interface, so as long as the implementation is the only thing that
+changes, the file above never needs recompilation. Thus, although
+this isn’t perfect implementation hiding, it’s a big improvement.
+
+
+
+
