@@ -1,0 +1,630 @@
+Constants
+=======================
+
+Q1: Need for consts to solve value substitution problem
+When programming in C, the preprocessor is liberally used to
+create macros and to substitute values. Because the preprocessor
+simply does text replacement and has no concept nor facility for
+type checking, preprocessor value substitution introduces subtle
+problems that can be avoided in C++ by using const values.
+The typical use of the preprocessor to substitute values for names
+in C looks like this:
+#define BUFSIZE 100
+BUFSIZE is a name that only exists during preprocessing, therefore
+it doesn’t occupy storage and can be placed in a header file to
+provide a single value for all translation units that use it. It’s very
+important for code maintenance to use value substitution instead of
+so-called “magic numbers.”
+Most of the time, BUFSIZE will behave like an ordinary variable,
+but not all the time. In addition, there’s no type information. This
+can hide bugs that are very difficult to find. C++ uses const to
+eliminate these problems by bringing value substitution into the
+domain of the compiler. Now you can say
+const int bufsize = 100;
+You can use bufsize anyplace where the compiler must know the
+value at compile time. The compiler can use bufsizeto perform
+constant folding, which means the compiler will reduce a
+complicated constant expression to a simple one by performing the
+necessary calculations at compile time. This is especially important
+in array definitions:
+char buf[bufsize];
+You can use const for all the built-in types (char, int, float, and
+double) and their variants (as well as class objects, as you’ll see
+later in this chapter). Because of subtle bugs that the preprocessor
+might introduce, you should always use const instead of #define
+value substitution.
+
+Q2: Const in header files
+To use const instead of #define, you must be able to place const
+definitions inside header files as you can with #define. This way,
+you can place the definition for a const in a single place and
+distribute it to translation units by including the header file. A
+const in C++ defaults to internal linkage; that is, it is visible only
+within the file where it is defined and cannot be seen at link time by
+other translation units. You must always assign a value to a const
+when you define it, except when you make an explicit declaration
+using extern:
+extern const int bufsize;
+Normally, the C++ compiler avoids creating storage for a const, but
+instead holds the definition in its symbol table. When you use
+extern with const, however, you force storage to be allocated (this
+is also true for certain other cases, such as taking the address of a
+const). Storage must be allocated because extern says “use external
+linkage,” which means that several translation units must be able to
+refer to the item, which requires it to have storage.
+In the ordinary case, when extern is not part of the definition, no
+storage is allocated. When the const is used, it is simply folded in at
+compile time.
+The goal of never allocating storage for a const also fails with
+complicated structures. Whenever the compiler must allocate
+storage, constant folding is prevented (since there’s no way for the
+compiler to know for sure what the value of that storage is – if it
+could know that, it wouldn’t need to allocate the storage).
+Because the compiler cannot always avoid allocating storage for a
+const, const definitions must default to internal linkage, that is,
+linkage only within that particular translation unit. Otherwise,
+linker errors would occur with complicated consts because they
+cause storage to be allocated in multiple cpp files. The linker would
+then see the same definition in multiple object files, and complain.
+Because a const defaults to internal linkage, the linker doesn’t try to
+link those definitions across translation units, and there are no
+collisions. With built-in types, which are used in the majority of
+cases involving constant expressions, the compiler can always
+perform constant folding.
+
+Q3:Need for consts as Safety Consts
+The use of const is not limited to replacing #defines in constant
+expressions. If you initialize a variable with a value that is
+produced at runtime and you know it will not change for the
+lifetime of that variable, it is good programming practice to make it
+a const so the compiler will give you an error message if you
+accidentally try to change it. 
+scoping works for consts as it does for any other type – yet another improvement over the
+use of #define.
+As a matter of practice, if you think a value shouldn’t change, you
+should make it a const. This not only provides insurance against
+inadvertent changes, it also allows the compiler to generate more
+efficient code by eliminating storage and memory reads.
+
+Q4: Use of consts in Aggregates
+It’s possible to use const for aggregates, but you’re virtually
+assured that the compiler will not be sophisticated enough to keep
+an aggregate in its symbol table, so storage will be allocated. In
+these situations, const means “a piece of storage that cannot be
+changed.” However, the value cannot be used at compile time
+because the compiler is not required to know the contents of the
+storage at compile time.In an array definition, the compiler must be able to generate code
+that moves the stack pointer to accommodate the array. In both of
+the illegal definitions above, the compiler complains because it
+cannot find a constant expression in the array definition.
+ 
+Q5: Const differences between C and C++
+Constants were introduced in early versions of C++ while the
+Standard C specification was still being finished. Although the C
+committee then decided to include const in C, somehow it came to
+mean for them “an ordinary variable that cannot be changed.” In C,
+a const always occupies storage and its name is global. The C
+compiler cannot treat a const as a compile-time constant. In C, if
+you say
+const int bufsize = 100;
+char buf[bufsize];
+you will get an error, even though it seems like a rational thing to
+do. Because bufsize occupies storage somewhere, the C compiler
+cannot know the value at compile time. You can optionally say
+const int bufsize;
+in C, but not in C++, and the C compiler accepts it as a declaration
+indicating there is storage allocated elsewhere. Because C defaults
+to external linkage for consts, this makes sense. C++ defaults to
+internal linkage for consts so if you want to accomplish the same
+thing in C++, you must explicitly change the linkage to external
+using extern:
+extern const int bufsize; // Declaration only
+This line also works in C.
+In C++, a const doesn’t necessarily create storage. In C a const
+always creates storage. Whether or not storage is reserved for a
+const in C++ depends on how it is used. In general, if a const is
+used simply to replace a name with a value (just as you would use
+a #define), then storage doesn’t have to be created for the const. If
+no storage is created (this depends on the complexity of the data
+type and the sophistication of the compiler), the values may be
+folded into the code for greater efficiency after type checking, not
+before, as with #define. If, however, you take an address of a const
+(even unknowingly, by passing it to a function that takes a
+reference argument) or you define it as extern, then storage is
+created for the const.
+In C++, a const that is outside all functions has file scope (i.e., it is
+invisible outside the file). That is, it defaults to internal linkage.
+This is very different from all other identifiers in C++ (and from
+const in C!) that default to external linkage. Thus, if you declare a
+const of the same name in two different files and you don’t take the
+address or define that name as extern, the ideal C++ compiler
+won’t allocate storage for the const, but simply fold it into the code.
+Because const has implied file scope, you can put it in C++ header
+files with no conflicts at link time.
+Since a const in C++ defaults to internal linkage, you can’t just
+define a const in one file and reference it as an extern in another
+file. To give a const external linkage so it can be referenced from
+another file, you must explicitly define it as extern, like this:
+extern const int x = 1;
+Notice that by giving it an initializer and saying it is extern, you
+force storage to be created for the const (although the compiler still
+has the option of doing constant folding here). The initialization
+establishes this as a definition, not a declaration. The declaration:
+extern const int x;
+in C++ means that the definition exists elsewhere (again, this is not
+necessarily true in C). You can now see why C++ requires a const
+definition to have an initializer: the initializer distinguishes a
+declaration from a definition (in C it’s always a definition, so no
+initializer is necessary). With an extern const declaration, the
+compiler cannot do constant folding because it doesn’t know the
+value.
+The C approach to const is not very useful, and if you want to use a
+named value inside a constant expression (one that must be
+evaluated at compile time), C almost forces you to use #define in
+the preprocessor.
+
+Q6: Consts and Pointers
+Pointers can be made const. The compiler will still endeavor to
+prevent storage allocation and do constant folding when dealing
+with const pointers, but these features seem less useful in this case.
+More importantly, the compiler will tell you if you attempt to
+change a const pointer, which adds a great deal of safety.
+When using const with pointers, you have two options: const can
+be applied to what the pointer is pointing to, or the const can be
+applied to the address stored in the pointer itself. The syntax for
+these is a little confusing at first but becomes comfortable with
+practice.
+
+Q7: Pointer to const
+The const specifier binds to the thing it is “closest to.” So if you
+want to prevent any changes to the element you are pointing to,
+you write a definition like this:
+const int* u;
+Starting from the identifier, we read “u is a pointer, which points to
+a const int.” Here, no initialization is required because you’re
+saying that u can point to anything (that is, it is not const), but the
+thing it points to cannot be changed.
+Here’s the mildly confusing part. You might think that to make the
+pointer itself unchangeable, that is, to prevent any change to the
+address contained inside u, you would simply move the const to
+the other side of the int like this:
+int const* v;
+It’s not all that crazy to think that this should read “v is a const
+pointer to an int.” However, the way it actually reads is “v is an
+ordinary pointer to an int that happens to be const.” That is, the
+const has bound itself to the int again, and the effect is the same as
+the previous definition. The fact that these two definitions are the
+same is the confusing point; to prevent this confusion on the part of
+your reader, you should probably stick to the first form.
+
+Q8: const pointer
+To make the pointer itself a const, you must place the const
+specifier to the right of the *, like this:
+int d = 1;
+int* const w = &d;
+Now it reads: “w is a pointer, which is const, that points to an int.”
+Because the pointer itself is now the const, the compiler requires
+that it be given an initial value that will be unchanged for the life of
+that pointer.
+It’s OK, however, to change what that value points to
+by saying
+*w = 2;
+You can also make a const pointer to a const object using either of
+two legal forms:
+int d = 1;
+const int* const x = &d; // (1)
+int const* const x2 = &d; // (2)
+Now neither the pointer nor the object can be changed.
+
+Q9: Pointer formatting
+ the formatting style of
+“attaching” the ‘*’ to the data type is possible:
+int* u = &i;
+as if int* were a discrete type unto itself. This makes the code easier
+to understand, but unfortunately that’s not actually the way things
+work. The ‘*’ in fact binds to the identifier, not the type. It can be
+placed anywhere between the type name and the identifier. So you
+could do this:
+int *u = &i, v = 0;
+which creates an int* u, as before, and a non-pointer int v.
+
+Q10: Assignment and type checking with consts
+C++ is very particular about type checking, and this extends to
+pointer assignments. You can assign the address of a non-const
+object to a const pointer because you’re simply promising not to
+change something that is OK to change. However, you can’t assign
+the address of a const object to a non-const pointer because then
+you’re saying you might change the object via the pointer. Of
+course, you can always use a cast to force such an assignment, but
+this is bad programming practice because you are then breaking the
+constness of the object, along with any safety promised by the
+const.Although C++ helps prevent errors it does not protect you from
+yourself if you want to break the safety mechanisms.
+
+Q11: Character array literals and const
+The place where strict constness is not enforced is with character
+array literals. You can say
+char* cp = "howdy";
+and the compiler will accept it without complaint. This is
+technically an error because a character array literal (“howdy” in
+this case) is created by the compiler as a constant character array,
+and the result of the quoted character array is its starting address in
+memory. Modifying any of the characters in the array is a runtime
+error, although not all compilers enforce this correctly.
+So character array literals are actually constant character arrays. Of
+course, the compiler lets you get away with treating them as non-
+const because there’s so much existing C code that relies on this.
+However, if you try to change the values in a character array literal,
+the behavior is undefined, although it will probably work on many
+machines.
+If you want to be able to modify the string, put it in an array:
+char cp[] = "howdy";
+Since compilers often don’t enforce the difference you won’t be
+reminded to use this latter form and so the point becomes rather
+subtle.
+
+Q12: Function arguments and return values with consts
+The use of const to specify function arguments and return values is
+another place where the concept of constants can be confusing. If
+you are passing objects by value, specifying const has no meaning to
+the client (it means that the passed argument cannot be modified
+inside the function). If you are returning an object of a user-defined
+type by value as a const, it means the returned value cannot be
+modified. If you are passing and returning addresses, const is a
+promise that the destination of the address will not be changed.
+
+
+Q13: Passing by const value
+You can specify that function arguments are const when passing
+them by value, such as
+void f1(const int i) {
+i++; // Illegal -- compile-time error
+}
+but what does this mean? You’re making a promise that the
+original value of the variable will not be changed by the function
+f1( ). However, because the argument is passed by value, you
+immediately make a copy of the original variable, so the promise to
+the client is implicitly kept.
+Inside the function, the const takes on meaning: the argument
+cannot be changed. So it’s really a tool for the creator of the
+function, and not the caller.
+To avoid confusion to the caller, you can make the argument a
+const inside the function, rather than in the argument list. You
+could do this with a pointer, but a nicer syntax is achieved with the
+reference, a subject that will be fully developed in Chapter 11.
+Briefly, a reference is like a constant pointer that is automatically
+dereferenced, so it has the effect of being an alias to an object. To
+create a reference, you use the & in the definition. So the non-
+confusing function definition looks like this:
+void f2(int ic) {
+const int& i = ic;
+i++; // Illegal -- compile-time error
+}
+Again, you’ll get an error message, but this time the constness of
+the local object is not part of the function signature; it only has
+meaning to the implementation of the function and therefore it’s
+hidden from the client.
+
+
+Q14: Returning by const value
+A similar truth holds for the return value. If you say that a
+function’s return value is const:
+const int g();
+you are promising that the original variable (inside the function
+frame) will not be modified. And again, because you’re returning it
+by value, it’s copied so the original value could never be modified
+via the return value.
+At first, this can make the specification of const seem meaningless.
+You can see the apparent lack of effect of returning consts by value
+in this example:
+//: C08:Constval.cpp
+// Returning consts by value
+// has no meaning for built-in types
+int f3() { return 1; }
+const int f4() { return 1; }
+int main() {
+const int j = f3(); // Works fine
+int k = f4(); // But this works fine too!
+} ///:~
+For built-in types, it doesn’t matter whether you return by value as
+a const, so you should avoid confusing the client programmer and
+leave off the const when returning a built-in type by value.
+Returning by value as a const becomes important when you’re
+dealing with user-defined types. If a function returns a class object
+by value as a const, the return value of that function cannot be an
+lvalue (that is, it cannot be assigned to or otherwise modified). For
+example:
+//: C08:ConstReturnValues.cpp
+// Constant return by value
+// Result cannot be used as an lvalue
+class X {
+int i;
+public:
+X(int ii = 0);
+void modify();
+};
+X::X(int ii) { i = ii; }
+void X::modify() { i++; }
+X f5() {
+return X();
+}
+const X f6() {
+return X();
+}
+void f7(X& x) { // Pass by non-const reference
+x.modify();
+}
+int main() {
+f5() = X(1); // OK -- non-const return value
+f5().modify(); // OK
+// Causes compile-time errors:
+//! f7(f5());
+//! f6() = X(1);
+//! f6().modify();
+//! f7(f6());
+} ///:~
+f5( ) returns a non-const X object, while f6( ) returns a const X
+object. Only the non-const return value can be used as an lvalue.
+Thus, it’s important to use const when returning an object by value
+if you want to prevent its use as an lvalue.
+The reason const has no meaning when you’re returning a built-in
+type by value is that the compiler already prevents it from being an
+lvalue (because it’s always a value, and not a variable). Only when
+you’re returning objects of user-defined types by value does it
+become an issue.
+The function f7( ) takes its argument as a non-const reference (an
+additional way of handling addresses in C++. This is effectively the same as taking a non-const
+pointer; it’s just that the syntax is different. The reason this won’t
+compile in C++ is because of the creation of a temporary.
+
+
+Q15: Temporaries
+Sometimes, during the evaluation of an expression, the compiler
+must create temporary objects. These are objects like any other: they
+require storage and they must be constructed and destroyed. The
+difference is that you never see them – the compiler is responsible
+for deciding that they’re needed and the details of their existence.
+But there is one thing about temporaries: they’re automatically
+const. Because you usually won’t be able to get your hands on a
+temporary object, telling it to do something that will change that
+temporary is almost certainly a mistake because you won’t be able
+to use that information. By making all temporaries automatically
+const, the compiler informs you when you make that mistake.
+
+Q16: Passing and returning addresses
+If you pass or return an address (either a pointer or a reference), it’s
+possible for the client programmer to take it and modify the
+original value. If you make the pointer or reference a const, you
+prevent this from happening, which may save you some grief. In
+fact, whenever you’re passing an address into a function, you
+should make it a const if at all possible. If you don’t, you’re
+excluding the possibility of using that function with anything that
+is a const.
+You never want to return pointers to local stack variables because they will be
+invalid after the function returns and the stack is cleaned up.
+(Another common pointer you might return is the address of
+storage allocated on the heap, which is still valid after the function
+returns.)
+
+Q17: Standard argument passing
+In C it’s very common to pass by value, and when you want to pass
+an address your only choice is to use a pointer. Some folks go as far as saying that 
+everything in C is pass by value, since when you pass a pointer a copy is made 
+(so you’re passing the pointer by value). However precise this might be, I think it actually confuses the issue.
+Passing an address is virtually always more efficient than
+passing an entire class object, and if you pass by const reference it
+means your function will not change the destination of that
+address, so the effect from the client programmer’s point of view is
+exactly the same as pass-by-value (only more efficient).
+
+Q18:Advantage of refrences C++ for temporary objects involving const
+Because of the syntax of references (it looks like pass-by-value to
+the caller) it’s possible to pass a temporary object to a function that
+takes a const reference, whereas you can never pass a temporary
+object to a function that takes a pointer – with a pointer, the address
+must be explicitly taken. So passing by reference produces a new
+situation that never occurs in C: a temporary, which is always
+const, can have its address passed to a function. This is why, to
+allow temporaries to be passed to functions by reference, the
+argument must be a const reference.
+
+Q19: Consts and Classes
+You may want to create a local const in a class to use inside constant
+expressions that will be evaluated at compile time. However, the
+meaning of const is different inside classes, so you must
+understand the options in order to create const data members of a
+class.
+You can also make an entire object const (and as you’ve just seen,
+the compiler always makes temporary objects const). But
+preserving the constness of an object is more complex. The
+compiler can ensure the constness of a built-in type but it cannot
+monitor the intricacies of a class. To guarantee the constness of a
+class object, the const member function is introduced: only a const
+member function may be called for a const object.
+ 
+Q20: Consts in classes
+One of the places you’d like to use a const for constant expressions
+is inside classes. The typical example is when you’re creating an
+array inside a class and you want to use a const instead of a
+#define to establish the array size and to use in calculations
+involving the array. The array size is something you’d like to keep
+hidden inside the class, so if you used a name like size, for
+example, you could use that name in another class without a clash.
+The preprocessor treats all #defines as global from the point they
+are defined, so this will not achieve the desired effect.
+You might assume that the logical choice is to place a const inside
+the class. This doesn’t produce the desired result. Inside a class,
+const partially reverts to its meaning in C. It allocates storage
+within each object and represents a value that is initialized once
+and then cannot change. The use of const inside a class means
+“This is constant for the lifetime of the object.” However, each
+different object may contain a different value for that constant.
+Thus, when you create an ordinary (non-static) const inside a class,
+you cannot give it an initial value. This initialization must occur in
+the constructor, of course, but in a special place in the constructor.
+Because a const must be initialized at the point it is created, inside
+the main body of the constructor the const must already be
+initialized. Otherwise you’re left with the choice of waiting until
+some point later in the constructor body, which means the const
+would be un-initialized for a while. Also, there would be nothing to
+keep you from changing the value of the const at various places in
+the constructor body.
+The constructor initializer list
+The special initialization point is called the constructor initializer list,
+and it was originally developed for use in inheritance. 
+The constructor initializer list – which, as the name
+implies, occurs only in the definition of the constructor – is a list of
+“constructor calls” that occur after the function argument list and a
+colon, but before the opening brace of the constructor body. This is
+to remind you that the initialization in the list occurs before any of
+the main constructor code is executed. This is the place to put all
+const initializations.
+
+Q21: Constructors for built-in types
+As the language developed and more effort was put into making
+user-defined types look like built-in types, it became apparent that
+there were times when it was helpful to make built-in types look
+like user-defined types. In the constructor initializer list, you can
+treat a built-in type as if it has a constructor.
+This is especially critical when initializing const data members
+because they must be initialized before the function body is
+entered.
+ 
+Q22:Compile-time constants in classes
+The above use of const is interesting and probably useful in cases,
+but it does not solve the original problem which is: “how do you
+make a compile-time constant inside a class?” 
+The answer requires
+the use of an additional keyword. The static keyword, in this
+situation, means “there’s only one instance, regardless of how
+many objects of the class are created,” which is precisely what we
+need here: a member of a class which is constant, and which cannot
+change from one object of the class to another. Thus, a static const
+of a built-in type can be treated as a compile-time constant.
+There is one feature of static const when used inside classes which
+is a bit unusual: you must provide the initializer at the point of
+definition of the static const . This is something that only occurs
+with the static const ; as much as you might like to use it in other
+situations it won’t work because all other data members must be
+initialized in the constructor or in other member functions.
+
+Q23: "Enum hack" as substitute for static const
+In older versions of C++, static const was not supported inside
+classes. This meant that const was useless for constant expressions
+inside classes. However, people still wanted to do this so a typical
+solution (usually referred to as the “enum hack”) was to use an
+untagged enum with no instances. An enumeration must have all
+its values established at compile time, it’s local to the class, and its
+values are available for constant expressions.
+//: C08:EnumHack.cpp
+#include <iostream>
+using namespace std;
+class Bunch {
+enum { size = 1000 };
+int i[size];
+};
+int main() {
+cout << "sizeof(Bunch) = " << sizeof(Bunch)
+<< ", sizeof(i[1000]) = "
+<< sizeof(int[1000]) << endl;
+} ///:~
+The use of enum here is guaranteed to occupy no storage in the
+object, and the enumerators are all evaluated at compile time.
+Although you’ll often see the enum technique in legacy code, the
+static const feature was added to the language to solve just this
+problem. However, there is no overwhelming reason that you must
+choose static const over the enum hack.
+
+
+Q24: Const objects and member functions
+Class member functions can be made const. What does this mean?
+To understand, you must first grasp the concept of const objects.
+A const object is defined the same for a user-defined type as a built-
+in type. For example:
+const int i = 1;
+const blob b(2);
+Here, b is a const object of type blob. Its constructor is called with
+an argument of two. For the compiler to enforce constness, it must
+ensure that no data members of the object are changed during the
+object’s lifetime. It can easily ensure that no public data is modified,
+but how is it to know which member functions will change the data
+and which ones are “safe” for a const object?
+If you declare a member function const, you tell the compiler the
+function can be called for a const object. A member function that is
+not specifically declared const is treated as one that will modify
+data members in an object, and the compiler will not allow you to
+call it for a const object.
+It doesn’t stop there, however. Just claiming a member function is
+const doesn’t guarantee it will act that way, so the compiler forces
+you to reiterate the const specification when defining the function.
+(The const becomes part of the function signature, so both the
+compiler and linker check for constness.) Then it enforces constness
+during the function definition by issuing an error message if you
+try to change any members of the object or call a non-const member
+function. Thus, any member function you declare const is
+guaranteed to behave that way in the definition.
+To understand the syntax for declaring const member functions,
+first notice that preceding the function declaration with const
+means the return value is const, so that doesn’t produce the desired
+results. Instead, you must place the const specifier after the
+argument list. Note that the const keyword must be repeated in the definition or
+the compiler sees it as a different function. You can see that a const member function is safe to call with both
+const and non-const objects. Thus, you could think of it as the most
+general form of a member function (and because of this, it is
+unfortunate that member functions do not automatically default to
+const). Any function that doesn’t modify member data should be
+declared as const, so it can be used with const objects.
+Neither constructors nor destructors can be const member
+functions because they virtually always perform some modification
+on the object during initialization and cleanup. 
+
+Q25: Mutable: bitwise vs logical const
+What if you want to create a const member function, but you’d still
+like to change some of the data in the object? This is sometimes
+referred to as the difference between bitwise const and logical const
+(also sometimes called memberwise const). Bitwise const means that
+every bit in the object is permanent, so a bit image of the object will
+never change. Logical const means that, although the entire object
+is conceptually constant, there may be changes on a member-by-
+member basis. However, if the compiler is told that an object is
+const, it will jealously guard that object to ensure bitwise constness.
+To effect logical constness, there are two ways to change a data
+member from within a const member function.
+The first approach is the historical one and is called casting away
+constness. It is performed in a rather odd fashion. You take this (the
+keyword that produces the address of the current object) and cast it
+to a pointer to an object of the current type. It would seem that this
+is already such a pointer. However, inside a const member function
+it’s actually a const pointer, so by casting it to an ordinary pointer,
+you remove the constness for that operation.This approach works and you’ll see it used in legacy code, but it is
+not the preferred technique. The problem is that this lack of
+constness is hidden away in a member function definition, and you
+have no clue from the class interface that the data of the object is
+actually being modified unless you have access to the source code
+(and you must suspect that constness is being cast away, and look
+for the cast). To put everything out in the open, you should use the
+mutable keyword in the class declaration to specify that a
+particular data member may be changed inside a const object:
+This way, the user of the class can see from the declaration which
+members are likely to be modified in a const member function.
+
+Q26: Volatile objects
+The syntax of volatile is identical to that for const, but volatile
+means “This data may change outside the knowledge of the
+compiler.” Somehow, the environment is changing the data
+(possibly through multitasking, multithreading or interrupts), and
+volatiletells the compiler not to make any assumptions about that
+data, especially during optimization.
+If the compiler says, “I read this data into a register earlier, and I
+haven’t touched that register,” normally it wouldn’t need to read
+the data again. But if the data is volatile , the compiler cannot make
+such an assumption because the data may have been changed by
+another process, and it must reread that data rather than
+optimizing the code to remove what would normally be a
+redundant read.
+You create volatile objects using the same syntax that you use to
+create const objects. You can also create const volatile objects,
+which can’t be changed by the client programmer but instead
+change through some outside agency.The syntax of volatile is identical to const, so discussions of the two
+are often treated together. The two are referred to in combination as
+the c-v qualifier.
