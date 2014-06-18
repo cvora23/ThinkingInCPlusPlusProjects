@@ -1,0 +1,272 @@
+InlineFunctions
+=========================
+
+Q1: Need for inline functions
+In C, one of the ways to preserve efficiency is through the use of
+macros, which allow you to make what looks like a function call
+without the normal function call overhead. The macro is
+implemented with the preprocessor instead of the compiler proper,
+and the preprocessor replaces all macro calls directly with the
+macro code, so there’s no cost involved from pushing arguments,
+making an assembly-language CALL, returning arguments, and
+performing an assembly-language RETURN. All the work is
+performed by the preprocessor, so you have the convenience and
+readability of a function call but it doesn’t cost you anything.
+There are two problems with the use of preprocessor macros in
+C++. The first is also true with C: a macro looks like a function call,
+but doesn’t always act like one. This can bury difficult-to-find bugs.
+The second problem is specific to C++: the preprocessor has no
+permission to access class member data. This means preprocessor
+macros cannot be used as class member functions.
+To retain the efficiency of the preprocessor macro, but to add the
+safety and class scoping of true functions, C++ has the inline
+function. 
+
+Q2: Pre-processor pitfalls
+The key to the problems of preprocessor macros is that you can be
+fooled into thinking that the behavior of the preprocessor is the
+same as the behavior of the compiler. Of course, it was intended
+that a macro look and act like a function call, so it’s quite easy to
+fall into this fiction. The difficulties begin when the subtle
+differences appear. The first is that expressions may expand
+inside the macro so that their evaluation precedence is different
+from what you expect.You can solve it by putting parentheses around everything in the macro
+definition. (This is a good practice to use when creating preprocessor macros.) 
+The preceding problem can be solved with careful programming
+practice: parenthesize everything in a macro. However, the second
+difficulty is subtler. Unlike a normal function, every time you use
+an argument in a macro, that argument is evaluated. As long as the
+macro is called only with ordinary variables, this evaluation is
+benign, but if the evaluation of an argument has side effects, then
+the results can be surprising and will definitely not mimic function
+behavior.Notice the use of all upper-case characters in the name of the
+macro. This is a helpful practice because it tells the reader this is a
+macro and not a function, so if there are problems, it acts as a little
+reminder.This is clearly not the kind of behavior you want from a macro that
+looks like a function call. In this case, the obvious solution is to
+make it a true function, which of course adds the extra overhead
+and may reduce efficiency if you call that function a lot.
+Unfortunately, the problem may not always be so obvious, and you
+can unknowingly get a library that contains functions and macros
+mixed together, so a problem like this can hide some very difficult-
+to-find bugs. For example, the putc( )macro in cstdio may evaluate
+its second argument twice. This is specified in Standard C. Also,
+careless implementations of toupper( )as a macro may evaluate the
+argument more than once, which will give you unexpected results
+with toupper(*p++).
+
+Q3: Macros and Access
+Of course, careful coding and use of preprocessor macros is
+required with C, and we could certainly get away with the same
+thing in C++ if it weren’t for one problem: a macro has no concept
+of the scoping required with member functions. The preprocessor
+simply performs text substitution, so you cannot say something like
+class X {
+int i;
+public:
+#define VAL(X::i) // Error
+or anything even close. In addition, there would be no indication of
+which object you were referring to. There is simply no way to
+express class scope in a macro. Without some alternative to
+preprocessor macros, programmers will be tempted to make some
+data members public for the sake of efficiency, thus exposing the
+underlying implementation and preventing changes in that
+implementation, as well as eliminating the guarding that private
+provides.
+
+Q4: Inline functions
+In solving the C++ problem of a macro with access to private class
+members, all the problems associated with preprocessor macros
+were eliminated. This was done by bringing the concept of macros
+under the control of the compiler where they belong. C++
+implements the macro as inline function, which is a true function in
+every sense. Any behavior you expect from an ordinary function,
+you get from an inline function. The only difference is that an inline
+function is expanded in place, like a preprocessor macro, so the
+overhead of the function call is eliminated. Thus, you should
+(almost) never use macros, only inline functions.
+Any function defined within a class body is automatically inline,
+but you can also make a non-class function inline by preceding it
+with the inline keyword. However, for it to have any effect, you
+must include the function body with the declaration, otherwise the
+compiler will treat it as an ordinary function declaration. Thus,
+inline int plusOne(int x);
+has no effect at all other than declaring the function (which may or
+may not get an inline definition sometime later). The successful
+approach provides the function body:
+inline int plusOne(int x) { return ++x; }
+Notice that the compiler will check (as it always does) for the
+proper use of the function argument list and return value
+(performing any necessary conversions), something the
+preprocessor is incapable of. Also, if you try to write the above as a
+preprocessor macro, you get an unwanted side effect.
+You’ll almost always want to put inline definitions in a header file.
+When the compiler sees such a definition, it puts the function type
+(the signature combined with the return value) and the function
+body in its symbol table. When you use the function, the compiler
+checks to ensure the call is correct and the return value is being
+used correctly, and then substitutes the function body for the
+function call, thus eliminating the overhead. The inline code does
+occupy space, but if the function is small, this can actually take less
+space than the code generated to do an ordinary function call
+(pushing arguments on the stack and doing the CALL).
+An inline function in a header file has a special status, since you
+must include the header file containing the function and its
+definition in every file where the function is used, but you don’t
+end up with multiple definition errors (however, the definition
+must be identical in all places where the inline function is
+included).
+
+
+Q5: Inlines inside classes
+Any function you define inside a class definition is automatically an inline.
+in main( )that the fact you are using inline functions is transparent, as it should be. 
+The logical behavior of a function must be identical regardless of whether it’s an inline
+(otherwise your compiler is broken). The only difference you’ll see
+is in performance.the temptation is to use inlines everywhere inside class
+declarations because they save you the extra step of making the
+external member function definition. Keep in mind, however, that
+the idea of an inline is to provide improved opportunities for
+optimization by the compiler. But inlining a big function will cause
+that code to be duplicated everywhere the function is called,
+producing code bloat that may mitigate the speed benefit (the only
+reliable course of action is to experiment to discover the effects of
+inlining on your program with your compiler).
+
+Q6: Access functions
+One of the most important uses of inlines inside classes is the access
+function. This is a small function that allows you to read or change
+part of the state of an object – that is, an internal variable or variables.
+ 
+Q7: Accessors and mutators
+Some people further divide the concept of access functions into
+accessors (to read state information from an object) and mutators (to
+change the state of an object).You cannot have member function names using the same
+identifiers as data members, so you might be tempted to
+distinguish the data members with a leading underscore. However,
+identifiers with leading underscores are reserved so you should not
+use them.You may choose instead to use “get” and “set” to indicate accessors
+and mutators:
+
+Q8: Inlines and compilers
+To understand when inlining is effective, it’s helpful to know what
+the compiler does when it encounters an inline. As with any function, 
+the compiler holds the function type (that is, the function
+prototype including the name and argument types, in combination
+with the function return value) in its symbol table. In addition,
+when the compiler sees that the inline’s function type and the
+function body parses without error, the code for the function body
+is also brought into the symbol table. Whether the code is stored in
+source form, compiled assembly instructions, or some other
+representation is up to the compiler.
+When you make a call to an inline function, the compiler first
+ensures that the call can be correctly made. That is, all the argument
+types must either be the exact types in the function’s argument list,
+or the compiler must be able to make a type conversion to the
+proper types and the return value must be the correct type (or
+convertible to the correct type) in the destination expression. This,
+of course, is exactly what the compiler does for any function and is
+markedly different from what the preprocessor does because the
+preprocessor cannot check types or make conversions.
+If all the function type information fits the context of the call, then
+the inline code is substituted directly for the function call,
+eliminating the call overhead and allowing for further
+optimizations by the compiler. Also, if the inline is a member
+function, the address of the object (this) is put in the appropriate
+place(s), which of course is another action the preprocessor is
+unable to perform.
+
+Q9: Inline functions limitations
+There are two situations in which the compiler cannot perform
+inlining. In these cases, it simply reverts to the ordinary form of a
+function by taking the inline definition and creating storage for the
+function just as it does for a non-inline. If it must do this in multiple
+translation units (which would normally cause a multiple
+definition error), the linker is told to ignore the multiple definitions.
+The compiler cannot perform inlining if the function is too
+complicated. This depends upon the particular compiler, but at the
+point most compilers give up, the inline probably wouldn’t gain
+you any efficiency. In general, any sort of looping is considered too
+complicated to expand as an inline, and if you think about it,
+looping probably entails much more time inside the function than
+what is required for the function call overhead. If the function is
+just a collection of simple statements, the compiler probably won’t
+have any trouble inlining it, but if there are a lot of statements, the
+overhead of the function call will be much less than the cost of
+executing the body. And remember, every time you call a big inline
+function, the entire function body is inserted in place of each call, so
+you can easily get code bloat without any noticeable performance
+improvement. The compiler also cannot perform inlining if the address of the
+function is taken implicitly or explicitly. If the compiler must
+produce an address, then it will allocate storage for the function
+code and use the resulting address. However, where an address is
+not required, the compiler will probably still inline the code.
+It is important to understand that an inline is just a suggestion to
+the compiler; the compiler is not forced to inline anything at all. A
+good compiler will inline small, simple functions while intelligently
+ignoring inlines that are too complicated. This will give you the
+results you want – the true semantics of a function call with the
+efficiency of a macro.
+
+Q10: Forward references and inlines
+If you’re imagining what the compiler is doing to implement
+inlines, you can confuse yourself into thinking there are more
+limitations than actually exist. In particular, if an inline makes a
+forward reference to a function that hasn’t yet been declared in the
+class (whether that function is inline or not), it can seem like the
+compiler won’t be able to handle it: the language definition states that no inline
+functions in a class shall be evaluated until the closing brace of the
+class declaration.
+
+
+Q11: Hidden activities in constructors and destructors
+Constructors and destructors are two places where you can be
+fooled into thinking that an inline is more efficient than it actually
+is. Constructors and destructors may have hidden activities,
+because the class can contain subobjects whose constructors and
+destructors must be called. These subobjects may be member
+objects, or they may exist because of inheritance.
+This doesn’t necessarily mean that you should always
+make constructor and destructor definitions non-inline; there are
+cases in which it makes sense. Also, when you’re making an initial
+“sketch” of a program by quickly writing code, it’s often more
+convenient to use inlines. But if you’re concerned about efficiency,
+it’s a place to look.
+
+Q12: Preprocessor features
+You almost always want to use inline functions instead of preprocessor macros. 
+The exceptions are when you need to use three special features in the C preprocessor 
+(which is also the C++ preprocessor): stringizing, string concatenation, and token pasting. 
+Stringizing,is performed with the # directive and allows you to take an identifier and turn it
+into a character array. String concatenation takes place when two
+adjacent character arrays have no intervening punctuation, in
+which case they are combined. These two features are especially
+useful when writing debug code. Thus,
+#define DEBUG(x) cout << #x " = " << x << endl
+ This prints the value of any variable. You can also get a trace that
+prints out the statements as they execute:
+#define TRACE(s) cerr << #s << endl; s
+The #s stringizes the statement for output, and the second s
+reiterates the statement so it is executed. Of course, this kind of
+thing can cause problems, especially in one-line for loops:
+for(int i = 0; i < 100; i++)
+TRACE(f(i));
+ Because there are actually two statements in the TRACE( ) macro,
+the one-line for loop executes only the first one. The solution is to
+replace the semicolon with a comma in the macro.
+Token pasting
+Token pasting, implemented with the ## directive, is very useful
+when you are manufacturing code. It allows you to take two
+identifiers and paste them together to automatically create a new
+identifier. For example,
+#define FIELD(a) char* a##_string; int a##_size
+class Record {
+FIELD(one);
+FIELD(two);
+FIELD(three);
+// ...
+};
+Each call to the FIELD( )macro creates an identifier to hold a
+character array and another to hold the length of that array. Not
+only is it easier to read, it can eliminate coding errors and make
+maintenance easier.
