@@ -1,0 +1,735 @@
+NameControl
+========================
+
+Q1: Static elements from C
+In both C and C++ the keyword static has two basic meanings,
+which unfortunately often step on each other’s toes:
+1.Allocated once at a fixed address; that is, the object is created
+in a special static data area rather than on the stack each time a
+function is called. This is the concept of static storage.
+2.Local to a particular translation unit (and local to a class
+scope in C++, as you will see later). Here, static controls the
+visibility of a name, so that name cannot be seen outside the
+translation unit or class. This also describes the concept of
+linkage, which determines what names the linker will see.
+
+Q2: Static variables inside functions
+C and C++ allow you to create a static object inside a
+function; the storage for this object is not on the stack but instead in
+the program’s static data area. This object is initialized only once,
+the first time the function is called, and then retains its value
+between function invocations. if you do not provide an initializer for a static variable of a
+built-in type, the compiler guarantees that variable will be
+initialized to zero (converted to the proper type) at program start-
+up.initialization for static objects (like all other objects) can be arbitrary expressions
+involving constants and previously declared variables and
+functions.whenever you design functions
+containing static variables you should keep multithreading issues
+in mind.
+
+Q3: Static class objects inside functions
+The rules are the same for static objects of user-defined types,
+including the fact that some initialization is required for the object.
+However, assignment to zero has meaning only for built-in types;
+user-defined types must be initialized with constructor calls. Thus,
+if you don’t specify constructor arguments when you define the
+static object, the class must have a default constructor.
+
+Q4: Static Object destructors
+Destructors for static objects (that is, all objects with static storage,
+not just local static objects as in the example above) are called when
+main( ) exits or when the Standard C library function exit( ) is
+explicitly called. In most implementations, main( ) just calls exit( )
+when it terminates. This means that it can be dangerous to call
+exit( ) inside a destructor because you can end up with infinite
+recursion. Static object destructors are not called if you exit the
+program using the Standard C library function abort( ).
+You can specify actions to take place when leaving main( ) (or
+calling exit( )) by using the Standard C library function atexit( ). In
+this case, the functions registered by atexit( )may be called before
+the destructors for any objects constructed before leaving main( )
+(or calling exit( )).
+Like ordinary destruction, destruction of static objects occurs in the
+reverse order of initialization. However, only objects that have been
+constructed are destroyed. Fortunately, the C++ development tools
+keep track of initialization order and the objects that have been
+constructed. Global objects are always constructed before main( ) is
+entered and destroyed as main( ) exits, but if a function containing
+a local static object is never called, the constructor for that object is
+never executed, so the destructor is also not executed. 
+In C++, the constructor for a global static object is called before
+main( ) is entered, so you now have a simple and portable way to
+execute code before entering main( ) and to execute code with the
+destructor after exiting main( ). In C, this was always a trial that
+required you to root around in the compiler vendor’s assembly-
+language startup code.
+
+Q5: Controlling linkage
+Ordinarily, any name at file scope (that is, not nested inside a class
+or function) is visible throughout all translation units in a program.
+This is often called external linkage because at link time the name is
+visible to the linker everywhere, external to that translation unit.
+Global variables and ordinary functions have external linkage.
+There are times when you’d like to limit the visibility of a name.
+You might like to have a variable at file scope so all the functions in
+that file can use it, but you don’t want functions outside that file to
+see or access that variable, or to inadvertently cause name clashes
+with identifiers outside the file.
+An object or function name at file scope that is explicitly declared
+static is local to its translation unit (in the terms of this book, the
+cpp file where the declaration occurs). That name has internal
+linkage. This means that you can use the same name in other
+translation units without a name clash.
+One advantage to internal linkage is that the name can be placed in
+a header file without worrying that there will be a clash at link
+time. Names that are commonly placed in header files, such as
+const definitions and inline functions, default to internal linkage.
+(However, const defaults to internal linkage only in C++; in C it
+defaults to external linkage.) Note that linkage refers only to
+elements that have addresses at link/load time; thus, class
+declarations and local variables have no linkage.
+
+Q6: Confusion with statics and globals
+Here’s an example of how the two meanings of static can cross over
+each other. All global objects implicitly have static storage class, so
+if you say (at file scope),
+int a = 0;
+then storage for a will be in the program’s static data area, and the
+initialization for a will occur once, before main( ) is entered. In
+addition, the visibility of a is global across all translation units. In
+terms of visibility, the opposite of static (visible only in this
+translation unit) is extern, which explicitly states that the visibility
+of the name is across all translation units. So the definition above is
+equivalent to saying
+extern int a = 0;
+But if you say instead,
+static int a = 0;
+all you’ve done is change the visibility, so a has internal linkage.
+The storage class is unchanged – the object resides in the static data
+area whether the visibility is static or extern.
+Once you get into local variables, static stops altering the visibility
+and instead alters the storage class.If you declare what appears to be a local variable as extern, it
+means that the storage exists elsewhere (so the variable is actually
+global to the function).With function names (for non-member functions), static and extern
+can only alter visibility.
+
+Q7: Class specifiers other than extern and static
+The auto specifier is almost never used because it tells the compiler that this is a local
+variable. auto is short for “automatic” and it refers to the way the
+compiler automatically allocates storage for the variable. The
+compiler can always determine this fact from the context in which
+the variable is defined, so auto is redundant.
+A register variable is a local (auto) variable, along with a hint to the
+compiler that this particular variable will be heavily used so the
+compiler ought to keep it in a register if it can. Thus, it is an
+optimization aid. Various compilers respond differently to this
+hint; they have the option to ignore it. If you take the address of the
+variable, the register specifier will almost certainly be ignored. You
+should avoid using register because the compiler can usually do a
+better job of optimization than you.
+
+Q8:Namespaces
+Although names can be nested inside classes, the names of global
+functions, global variables, and classes are still in a single global
+name space. The static keyword gives you some control over this
+by allowing you to give variables and functions internal linkage
+(that is, to make them file static). But in a large project, lack of
+control over the global name space can cause problems. To solve
+these problems for classes, vendors often create long complicated
+names that are unlikely to clash, but then you’re stuck typing those
+names. (A typedef is often used to simplify this.) It’s not an elegant,
+language-supported solution.
+You can subdivide the global name space into more manageable
+pieces using the namespace feature of C++. The namespace
+keyword, similar to class, struct, enum, and union, puts the names
+of its members in a distinct space. While the other keywords have
+additional purposes, the creation of a new name space is the only
+purpose for namespace.
+
+Q9: Creating Namespaces
+The creation of a namespace is notably similar to the creation of a
+class:
+//: C10:MyLib.cpp
+namespace MyLib {
+// Declarations
+}
+int main() {} ///:~
+This produces a new namespace containing the enclosed
+declarations. There are significant differences from class, struct,
+union and enum, however:
+•A namespace definition can appear only at global scope, or
+nested within another namespace.
+•No terminating semicolon is necessary after the closing brace
+of a namespace definition.
+•A namespace definition can be “continued” over multiple
+header files using a syntax that, for a class, would appear to
+be a redefinition.
+•A namespace name can be aliased to another name, so you
+don’t have to type an unwieldy name created by a library
+vendor
+•You cannot create an instance of a namespace as you can
+with a class.
+
+Q10: Un-named Namespaces
+Each translation unit contains an unnamed namespace that you can
+add to by saying “namespace ” without an identifier
+The names in this space are automatically available in that
+translation unit without qualification. It is guaranteed that an
+unnamed space is unique for each translation unit. If you put local
+names in an unnamed namespace, you don’t need to give them
+internal linkage by making them static.
+C++ deprecates the use of file statics in favor of the unnamed
+namespace.
+
+Q11: Friend injection in namespaces
+You can inject a friend declaration into a namespace by declaring it
+within an enclosed class:
+//: C10:FriendInjection.cpp
+namespace Me {
+class Us {
+//...
+friend void you();
+};
+}
+int main() {} ///:~
+Now the function you( ) is a member of the namespace Me.
+If you introduce a friend within a class in the global namespace, the
+friend is injected globally.
+
+Q12: Accesing a namespace
+You can refer to a name within a namespace in three ways: by
+specifying the name using the scope resolution operator, with a
+using directive to introduce all names in the namespace, or with a
+using declaration to introduce names one at a time.
+1: Scope resolution
+Any name in a namespace can be explicitly specified using the
+scope resolution operator in the same way that you can refer to the
+names within a class
+2: The using directive
+Because it can rapidly get tedious to type the full qualification for
+an identifier in a namespace, the using keyword allows you to
+import an entire namespace at once. When used in conjunction
+with the namespacekeyword this is called a using directive. The
+using directive makes names appear as if they belong to the nearest
+enclosing namespace scope, so you can conveniently use the
+unqualified names.
+One aspect of the using directive may seem slightly
+counterintuitive at first. The visibility of the names introduced with
+a using directive is the scope in which the directive is made. But
+you can override the names from the using directive as if they’ve
+been declared globally to that scope!
+3: The using declaration
+You can inject names one at a time into the current scope with a
+using declaration. Unlike the using directive, which treats names as
+if they were declared globally to the scope, a using declaration is a
+declaration within the current scope. This means it can override
+names from a using directive
+The using declaration just gives the fully specified name of the
+identifier, but no type information. This means that if the
+namespace contains a set of overloaded functions with the same
+name, the using declaration declares all the functions in the
+overloaded set.
+You can put a using declaration anywhere a normal declaration can
+occur. A using declaration works like a normal declaration in all
+ways but one: because you don’t give an argument list, it’s possible
+for a using declaration to cause the overload of a function with the
+same argument types (which isn’t allowed with normal
+overloading). This ambiguity, however, doesn’t show up until the
+point of use, rather than the point of declaration.
+A using declaration is an alias, and it allows you to declare the
+same function in separate namespaces. If you end up re-declaring
+the same function by importing different namespaces, it’s OK –
+there won’t be any ambiguities or duplications.
+
+Q13: How to use namespaces
+The key thing to remember is that when you introduce a global using
+directive (via a “using namespace
+ ” outside of any scope) you have
+thrown open the namespace for that file. This is usually fine for an
+implementation file (a “cpp” file) because the using directive is
+only in effect until the end of the compilation of that file. That is, it
+doesn’t affect any other files, so you can adjust the control of the
+namespaces one implementation file at a time. For example, if you
+discover a name clash because of too many using directives in a
+particular implementation file, it is a simple matter to change that
+file so that it uses explicit qualifications or using declarations to
+eliminate the clash, without modifying other implementation files.
+Header files are a different issue. You virtually never want to
+introduce a global using directive into a header file, because that
+would mean that any other file that included your header would
+also have the namespace thrown open (and header files can include
+other header files).
+
+Q14:Static members in C++
+There are times when you need a single storage space to be used by
+all objects of a class. In C, you would use a global variable, but this
+is not very safe. Global data can be modified by anyone, and its
+name can clash with other identical names in a large project. It
+would be ideal if the data could be stored as if it were global, but be
+hidden inside a class, and clearly associated with that class.
+This is accomplished with static data members inside a class. There
+is a single piece of storage for a static data member, regardless of
+how many objects of that class you create. All objects share the
+same static storage space for that data member, so it is a way for
+them to “communicate” with each other. But the static data belongs
+to the class; its name is scoped inside the class and it can be public,
+private, or protected .
+
+Q15: Defining storage for static data members
+Because static data has a single piece of storage regardless of how
+many objects are created, that storage must be defined in a single
+place. The compiler will not allocate storage for you. The linker will
+report an error if a static data member is declared but not defined.
+The definition must occur outside the class (no inlining is allowed),
+and only one definition is allowed. Thus, it is common to put it in
+the implementation file for the class. The syntax sometimes gives
+people trouble, but it is actually quite logical.
+For example, if you
+create a static data member inside a class like this:
+class A {
+static int i;
+public:
+//...
+};
+Then you must define storage for that static data member in the
+definition file like this:
+int A::i = 1;
+If you were to define an ordinary global variable, you would say
+int i = 1;
+but here, the scope resolution operator and the class name are used
+to specify A::i.
+Some people have trouble with the idea that A::i is private, and yet
+here’s something that seems to be manipulating it right out in the
+open. Doesn’t this break the protection mechanism? It’s a
+completely safe practice for two reasons. First, the only place this
+initialization is legal is in the definition. Indeed, if the static data
+were an object with a constructor, you would call the constructor
+instead of using the = operator. Second, once the definition has
+been made, the end-user cannot make a second definition – the
+linker will report an error. And the class creator is forced to create
+the definition or the code won’t link during testing. This ensures
+that the definition happens only once and that it’s in the hands of
+the class creator.
+
+Q16: static array initialization
+With static consts of integral types you can provide the definitions
+inside the class, but for everything else (including arrays of integral
+types, even if they are static const ) you must provide a single
+external definition for the member. These definitions have internal
+linkage, so they can be placed in header files. The syntax for
+initializing static arrays is the same as for any aggregate, including
+automatic counting.
+You can also create static const objects of class types and arrays of
+such objects. However, you cannot initialize them using the “inline
+syntax” allowed for static consts of integral built-in types.
+
+Q17: Static data members with nested and local classes
+You can easily put static data members in classes that are nested
+inside other classes. The definition of such members is an intuitive
+and obvious extension – you simply use another level of scope
+resolution. However, you cannot have static data members inside
+local classes (a local class is a class defined inside a function).
+Immediate problem with a static member in a local
+class: How do you describe the data member at file scope in order
+to define it? In practice, local classes are used very rarely.
+
+Q18: Static member functions
+You can also create static member functions that, like static data
+members, work for the class as a whole rather than for a particular
+object of a class. Instead of making a global function that lives in
+and “pollutes” the global or local namespace, you bring the
+function inside the class. When you create a static member
+function, you are expressing an association with a particular class.
+You can call a static member function in the ordinary way, with the
+dot or the arrow, in association with an object. However, it’s more
+typical to call a static member function by itself, without any
+specific object, using the scope-resolution operator.
+When you see static member functions in a class, remember that the
+designer intended that function to be conceptually associated with
+the class as a whole.
+A static member function cannot access ordinary data members,
+only static data members. It can call only other static member
+functions. Normally, the address of the current object (this) is
+quietly passed in when any member function is called, but a static
+member has no this, which is the reason it cannot access ordinary
+members. Thus, you get the tiny increase in speed afforded by a
+global function because a static member function doesn’t have the
+extra overhead of passing this. At the same time you get the
+benefits of having the function inside the class.
+For data members, static indicates that only one piece of storage for
+member data exists for all objects of a class. This parallels the use of
+static to define objects inside a function to mean that only one copy
+of a local variable is used for all calls of that function.
+Because they have no this pointer, static member functions can
+neither access non-static data members nor call non-static member
+functions. Because of the way initialization
+happens for static member objects, you can put a static data
+member of the same class inside that class.The initialization for static members
+happens after the class declaration is complete, so the compiler has all the information it needs to
+allocate storage and make the constructor call.
+
+Q19: Static initialization dependency
+Within a specific translation unit, the order of initialization of static
+objects is guaranteed to be the order in which the object definitions
+appear in that translation unit. The order of destruction is
+guaranteed to be the reverse of the order of initialization.
+However, there is no guarantee concerning the order of
+initialization of static objects across translation units, and the
+language provides no way to specify this order. This can cause
+significant problems.This problem only occurs with static object initializers that depend
+on each other. The statics in a translation unit are initialized before
+the first invocation of a function in that unit – but it could be after
+main( ). You can’t be sure about the order of initialization of static
+objects if they’re in different files.
+A subtler example can be found in the ARM.1 In one file you have
+at the global scope:
+extern int y;
+int x = y + 1;
+and in a second file you have at the global scope:
+extern int x;
+int y = x + 1;
+For all static objects, the linking-loading mechanism guarantees a
+static initialization to zero before the dynamic initialization
+specified by the programmer takes place. In the previous example,
+zeroing of the storage occupied by the fstream outobject has no
+special meaning, so it is truly undefined until the constructor is
+called. However, with built-in types, initialization to zero does have
+meaning, and if the files are initialized in the order they are shown
+above, y begins as statically initialized to zero, so x becomes one,
+and y is dynamically initialized to two. However, if the files are
+initialized in the opposite order, x is statically initialized to zero, y
+is dynamically initialized to one, and x then becomes two.
+Programmers must be aware of this because they can create a
+program with static initialization dependencies and get it working
+on one platform, but move it to another compiling environment
+where it suddenly, mysteriously, doesn’t work.
+What to do
+There are three approaches to dealing with this problem:
+1.Don’t do it. Avoiding static initialization dependencies is the
+best solution.
+2.If you must do it, put the critical static object definitions in a
+single file, so you can portably control their initialization by
+putting them in the correct order.
+3.If you’re convinced it’s unavoidable to scatter static objects
+across translation units – as in the case of a library, where
+you can’t control the programmer who uses it – there are two
+programmatic techniques to solve the problem.
+
+
+Q20: Technique 1 to solve static initialization dependency problem
+Technique one
+This technique was pioneered by Jerry Schwarz while creating the
+iostream library (because the definitions for cin, cout, and cerr are
+static and live in a separate file). It’s actually inferior to the second
+technique but it’s been around a long time and so you may come
+across code that uses it; thus it’s important that you understand
+how it works.
+This technique requires an additional class in your library header
+file. This class is responsible for the dynamic initialization of your
+library’s static objects. Here is a simple example:
+//: C10:Initializer.h
+// Static initialization technique
+#ifndef INITIALIZER_H
+#define INITIALIZER_H
+#include <iostream>
+extern int x; // Declarations, not definitions
+extern int y;
+class Initializer {
+static int initCount;
+public:
+Initializer() {
+std::cout << "Initializer()" << std::endl;
+// Initialize first time only
+if(initCount++ == 0) {
+std::cout << "performing initialization"
+<< std::endl;
+x = 100;
+y = 200;
+}
+}
+~Initializer() {
+std::cout << "~Initializer()" << std::endl;
+// Clean up last time only
+if(--initCount == 0) {
+std::cout << "performing cleanup"
+<< std::endl;
+// Any necessary cleanup here
+}
+}
+};
+// The following creates one object in each
+// file where Initializer.h is included, but that
+// object is only visible within that file:
+static Initializer init;
+#endif // INITIALIZER_H ///:~
+The declarations for x and y announce only that these objects exist,
+but they don’t allocate storage for the objects. However, the
+definition for the Initializer init
+ allocates storage for that object in
+every file where the header is included. But because the name is
+static (controlling visibility this time, not the way storage is
+allocated; storage is at file scope by default), it is visible only within
+that translation unit, so the linker will not complain about multiple
+definition errors.
+Here is the file containing the definitions for x, y, and initCount
+ :
+//: C10:InitializerDefs.cpp {O}
+// Definitions for Initializer.h
+#include "Initializer.h"
+// Static initialization will force
+// all these values to zero:
+int x;
+int y;
+int Initializer::initCount;
+///:~
+(Of course, a file static instance of init is also placed in this file
+when the header is included.) Suppose that two other files are
+created by the library user:
+//: C10:Initializer.cpp {O}
+// Static initialization
+#include "Initializer.h"
+///:~
+and
+//: C10:Initializer2.cpp
+//{L} InitializerDefs Initializer
+// Static initialization
+#include "Initializer.h"
+using namespace std;
+int main() {
+cout << "inside main()" << endl;
+cout << "leaving main()" << endl;
+} ///:~
+Now it doesn’t matter which translation unit is initialized first. The
+first time a translation unit containing Initializer.h is initialized,
+initCountwill be zero so the initialization will be performed. (This
+depends heavily on the fact that the static storage area is set to zero
+before any dynamic initialization takes place.) For all the rest of the
+translation units, initCountwill be nonzero and the initialization
+will be skipped. Cleanup happens in the reverse order, and
+~Initializer( ) ensures that it will happen only once.
+This example used built-in types as the global static objects. The
+technique also works with classes, but those objects must then be
+dynamically initialized by the Initializerclass. One way to do this
+is to create the classes without constructors and destructors, but
+instead with initialization and cleanup member functions using
+different names. A more common approach, however, is to have
+pointers to objects and to create them using new inside
+Initializer( )
+
+Q21: Technique 2 to solve static initialization dependency problem
+Long after technique one was in use, someone (I don’t know who)
+came up with the technique explained in this section, which is
+much simpler and cleaner than technique one. The fact that it took
+so long to discover is a tribute to the complexity of C++.
+This technique relies on the fact that static objects inside functions
+are initialized the first time (only) that the function is called. Keep
+in mind that the problem we’re really trying to solve here is not
+when the static objects are initialized (that can be controlled
+separately) but rather making sure that the initialization happens in
+the proper order.
+This technique is very neat and clever. For any initialization
+dependency, you place a static object inside a function that returns
+a reference to that object.This way, the only way you can access the
+static object is by calling the function, and if that object needs to
+access other static objects on which it is dependent it must call their
+functions. And the first time a function is called, it forces the
+initialization to take place. The order of static initialization is
+guaranteed to be correct because of the design of the code, not
+because of an arbitrary order established by the linker.
+To set up an example, here are two classes that depend on each
+other. The first one contains a bool that is initialized only by the
+constructor, so you can tell if the constructor has been called for a
+static instance of the class (the static storage area is initialized to
+zero at program startup, which produces a false value for the bool
+if the constructor has not been called):
+//: C10:Dependency1.h
+#ifndef DEPENDENCY1_H
+#define DEPENDENCY1_H
+#include <iostream>
+class Dependency1 {
+bool init;
+public:
+Dependency1() : init(true) {
+std::cout << "Dependency1 construction"
+<< std::endl;
+}
+void print() const {
+std::cout << "Dependency1 init: "
+<< init << std::endl;
+}
+};
+#endif // DEPENDENCY1_H ///:~
+The constructor also announces when it is being called, and you
+can print( )the state of the object to find out if it has been
+initialized.
+
+The second class is initialized from an object of the first class, which
+is what will cause the dependency:
+//: C10:Dependency2.h
+#ifndef DEPENDENCY2_H
+#define DEPENDENCY2_H
+#include "Dependency1.h"
+class Dependency2 {
+Dependency1 d1;
+public:
+Dependency2(const Dependency1& dep1): d1(dep1){
+std::cout << "Dependency2 construction ";
+print();
+}
+void print() const { d1.print(); }
+};
+#endif // DEPENDENCY2_H ///:~
+The constructor announces itself and prints the state of the d1
+object so you can see if it has been initialized by the time the
+constructor is called.
+To demonstrate what can go wrong, the following file first puts the
+static object definitions in the wrong order, as they would occur if
+the linker happened to initialize the Dependency2object before the
+Dependency1 object. Then the order is reversed to show how it
+works correctly if the order happens to be “right.” Lastly, technique
+two is demonstrated.
+To provide more readable output, the function separator( ) is
+created. The trick is that you can’t call a function globally unless
+that function is being used to perform the initialization of a
+variable, so separator( ) returns a dummy value that is used to
+initialize a couple of global variables.
+//: C10:Technique2.cpp
+#include "Dependency2.h"
+using namespace std;
+// Returns a value so it can be called as
+// a global initializer:
+int separator() {
+cout << "---------------------" << endl;
+return 1;
+}
+// Simulate the dependency problem:
+extern Dependency1 dep1;
+Dependency2 dep2(dep1);
+Dependency1 dep1;
+int x1 = separator();
+// But if it happens in this order it works OK:
+Dependency1 dep1b;
+Dependency2 dep2b(dep1b);
+int x2 = separator();
+// Wrapping static objects in functions succeeds
+Dependency1& d1() {
+static Dependency1 dep1;
+return dep1;
+}
+Dependency2& d2() {
+static Dependency2 dep2(d1());
+return dep2;
+}
+int main() {
+Dependency2& dep2 = d2();
+} ///:~
+The functions d1( ) and d2( ) wrap static instances of Dependency1
+and Dependency2objects. Now, the only way you can get to the
+static objects is by calling the functions and that forces static
+initialization on the first function call. This means that initialization
+is guaranteed to be correct, which you’ll see when you run the
+program and look at the output.
+Here’s how you would actually organize the code to use the
+technique. Ordinarily, the static objects would be defined in
+separate files (because you’re forced to for some reason; remember
+that defining the static objects in separate files is what causes the
+problem), so instead you define the wrapping functions in separate
+files. But they’ll need to be declared in header files:
+//: C10:Dependency1StatFun.h
+#ifndef DEPENDENCY1STATFUN_H
+#define DEPENDENCY1STATFUN_H
+#include "Dependency1.h"
+extern Dependency1& d1();
+#endif // DEPENDENCY1STATFUN_H ///:~
+Actually, the “extern” is redundant for the function declaration.
+Here’s the second header file:
+//: C10:Dependency2StatFun.h
+#ifndef DEPENDENCY2STATFUN_H
+#define DEPENDENCY2STATFUN_H
+#include "Dependency2.h"
+extern Dependency2& d2();
+#endif // DEPENDENCY2STATFUN_H ///:~
+Now, in the implementation files where you would previously
+have placed the static object definitions, you instead place the
+wrapping function definitions:
+//: C10:Dependency1StatFun.cpp {O}
+#include "Dependency1StatFun.h"
+Dependency1& d1() {
+static Dependency1 dep1;
+return dep1;
+} ///:~
+Presumably, other code might also be placed in these files. Here’s
+the other file:
+//: C10:Dependency2StatFun.cpp {O}
+#include "Dependency1StatFun.h"
+#include "Dependency2StatFun.h"
+Dependency2& d2() {
+static Dependency2 dep2(d1());
+return dep2;
+} ///:~
+So now there are two files that could be linked in any order and if
+they contained ordinary static objects could produce any order of
+initialization. But since they contain the wrapping functions, there’s
+no threat of incorrect initialization:
+//: C10:Technique2b.cpp
+//{L} Dependency1StatFun Dependency2StatFun
+#include "Dependency2StatFun.h"
+int main() { d2(); } ///:~
+When you run this program you’ll see that the initialization of the
+Dependency1 static object always happens before the initialization
+of the Dependency2 static object. You can also see that this is a
+much simpler approach than technique one.
+You might be tempted to write d1( ) and d2( ) as inline functions
+inside their respective header files, but this is something you must
+definitely not do. An inline function can be duplicated in every file
+in which it appears – and this duplication includes the static object
+definition. Because inline functions automatically default to
+internal linkage, this would result in having multiple static objects
+across the various translation units, which would certainly cause
+problems. So you must ensure that there is only one definition of
+each wrapping function, and this means not making the wrapping
+functions inline.
+
+Q22: Alternate linkage specifications
+What happens if you’re writing a program in C++ and you want to
+use a C library? If you make the C function declaration,
+float f(int a, char b);
+the C++ compiler will decorate this name to something like
+_f_int_char to support function overloading (and type-safe
+linkage). However, the C compiler that compiled your C library has
+most definitely not decorated the name, so its internal name will be
+_f. Thus, the linker will not be able to resolve your C++ calls to f( ).
+The escape mechanism provided in C++ is the alternate linkage
+specification, which was produced in the language by overloading
+the extern keyword. The extern is followed by a string that
+specifies the linkage you want for the declaration, followed by the
+declaration:
+extern "C" float f(int a, char b);
+This tells the compiler to give C linkage to f( ) so that the compiler
+doesn’t decorate the name. The only two types of linkage
+specifications supported by the standard are “C” and “C++,” but
+compiler vendors have the option of supporting other languages in
+the same way.
+If you have a group of declarations with alternate linkage, put them
+inside braces, like this:
+extern "C" {
+float f(int a, char b);
+double d(int a, char b);
+}
+Or, for a header file,
+extern "C" {
+#include "Myheader.h"
+}
+Most C++ compiler vendors handle the alternate linkage
+specifications inside their header files that work with both C and
+C++, so you don’t have to worry about it.
+
+
+
+
+
+
+
+ 
+
+
