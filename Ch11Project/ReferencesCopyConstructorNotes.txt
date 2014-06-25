@@ -1,0 +1,544 @@
+References and Copy Constructor Notes
+==========================================
+
+Q1: Basic need of References and Copy Constructor
+Although references also exist in Pascal, the C++ version was taken
+from the Algol language. They are essential in C++ to support the
+syntax of operator overloading , but they are also a
+general convenience to control the way arguments are passed into
+and out of functions. The copy-constructor is used by the compiler to pass
+and return objects by value into and out of functions.
+
+Q2: Difference between Pointers in C and C++
+The most important difference between pointers in C and those in
+C++ is that C++ is a more strongly typed language. This stands out
+where void* is concerned. C doesn’t let you casually assign a
+pointer of one type to another, but it does allow you to accomplish
+this through a void*. Thus,
+bird* b;
+rock* r;
+void* v;
+v = r;
+b = v;
+Because this “feature” of C allows you to quietly treat any type like
+any other type, it leaves a big hole in the type system. C++ doesn’t
+allow this; the compiler gives you an error message, and if you
+really want to treat one type as another, you must make it explicit,
+both to the compiler and to the reader, using a cast.
+
+Q3: References in C++
+A reference (&) is like a constant pointer that is automatically
+dereferenced. It is usually used for function argument lists and
+function return values. But you can also make a free-standing
+reference. The point is that any reference must be tied to someone else’s piece of
+storage. When you access a reference, you’re accessing that storage.
+Again, the easiest way to think about a reference is as a fancy pointer. One advantage
+of this “pointer” is that you never have to wonder whether it’s been
+initialized (the compiler enforces it) and how to dereference it (the
+compiler does it).
+
+Q4: Rules when using References
+1.A reference must be initialized when it is created. (Pointers
+can be initialized at any time.)
+2.Once a reference is initialized to an object, it cannot be
+changed to refer to another object. (Pointers can be pointed to
+another object at any time.)
+3.You cannot have NULL references. You must always be able
+to assume that a reference is connected to a legitimate piece
+of storage.
+
+Q5: References in functions
+The most common place you’ll see references is as function
+arguments and return values. When a reference is used as a
+function argument, any modification to the reference inside the
+function will cause changes to the argument outside the function. Of
+course, you could do the same thing by passing a pointer, but a
+reference has much cleaner syntax. (You can think of a reference as
+nothing more than a syntax convenience, if you want.)
+If you return a reference from a function, you must take the same
+care as if you return a pointer from a function. Whatever the
+reference is connected to shouldn’t go away when the function
+returns, otherwise you’ll be referring to unknown memory.
+
+Q6: const references
+ If you know the function will respect the constness of an object, making
+the argument a const reference will allow the function to be used in
+all situations. This means that, for built-in types, the function will
+not modify the argument, and for user-defined types, the function
+will call only const member functions, and won’t modify any
+public data members.
+The use of const references in function arguments is especially
+important because your function may receive a temporary object.
+This might have been created as a return value of another function
+or explicitly by the user of your function. Temporary objects are
+always const, so if you don’t use a const reference, that argument
+won’t be accepted by the compiler.With all temporary objects you must make the same assumption: that
+they’re inaccessible. It’s valuable for the compiler to tell you when
+you’re changing such data because the result would be lost
+information.
+
+Q7: Pointer References
+In C, if you want to modify the contents of the pointer rather than
+what it points to, your function declaration looks like:
+void f(int**);
+and you’d have to take the address of the pointer when passing it
+in:
+int i = 47;
+int* ip = &i;
+f(&ip);
+With references in C++, the syntax is cleaner. The function
+argument becomes a reference to a pointer, and you no longer have
+to take the address of that pointer.
+ #include <iostream>
+using namespace std;
+void increment(int*& i) { i++; }
+int main() {
+int* i = 0;
+cout << "i = " << i << endl;
+increment(i);
+cout << "i = " << i << endl;
+} ///:~
+
+Q8: Argument passing guidelines
+Your normal habit when passing an argument to a function should
+be to pass by const reference. Although at first this may seem like
+only an efficiency concern (and you normally don’t want to concern
+yourself with efficiency tuning while you’re designing and
+assembling your program), there’s more at stake: as you’ll see in
+the remainder of the chapter, a copy-constructor is required to pass
+an object by value, and this isn’t always available.
+The efficiency savings can be substantial for such a simple habit: to
+pass an argument by value requires a constructor and destructor
+call, but if you’re not going to modify the argument then passing by
+const reference only needs an address pushed on the stack.
+In fact, virtually the only time passing an address isn’t preferable is
+when you’re going to do such damage to an object that passing by
+value is the only safe approach (rather than modifying the outside
+object, something the caller doesn’t usually expect). 
+ 
+Q9: Copy Constructor
+the copy-constructor, often called X(X&) (“X of X ref”). This
+constructor is essential to control passing and returning of user-
+defined types by value during function calls. It’s so important, in
+fact, that the compiler will automatically synthesize a copy-
+constructor if you don’t provide one yourself.
+
+Q10: Passing and returning by values
+To understand the need for the copy-constructor, consider the way
+C handles passing and returning variables by value during function
+calls. If you declare a function and make a function call,
+int f(int x, char c);
+int g = f(a, b);
+how does the compiler know how to pass and return those
+variables? It just knows! The range of the types it must deal with is
+so small – char, int, float, double, and their variations – that this
+information is built into the compiler.
+If you figure out how to generate assembly code with your
+compiler and determine the statements generated by the function
+call to f( ), you’ll get the equivalent of:
+push b
+push a
+call f()
+add sp,4
+mov g, register a
+This code has been cleaned up significantly to make it generic; the
+expressions for b and a will be different depending on whether the
+variables are global (in which case they will be _b and _a) or local
+(the compiler will index them off the stack pointer). This is also true
+for the expression for g. The appearance of the call to f( ) will
+depend on your name-decoration scheme, and “register a” depends
+on how the CPU registers are named within your assembler. The
+logic behind the code, however, will remain the same.
+In C and C++, arguments are first pushed on the stack from right to
+left, then the function call is made. The calling code is responsible
+for cleaning the arguments off the stack (which accounts for the
+add sp,4 ). But notice that to pass the arguments by value, the
+compiler simply pushes copies on the stack – it knows how big
+they are and that pushing those arguments makes accurate copies
+of them.
+The return value of f( ) is placed in a register. Again, the compiler
+knows everything there is to know about the return value type
+because that type is built into the language, so the compiler can
+return it by placing it in a register. With the primitive data types in
+C, the simple act of copying the bits of the value is equivalent to
+copying the object.
+
+Q11: Passing and returning large objects
+But now consider user-defined types. If you create a class and you
+want to pass an object of that class by value, how is the compiler
+supposed to know what to do? This is not a type built into the
+compiler; it’s a type you have created.
+To investigate this, you can start with a simple structure that is
+clearly too large to return in registers:
+//: C11:PassingBigStructures.cpp
+struct Big {
+char buf[100];
+int i;
+long d;
+} B, B2;
+Big bigfun(Big b) {
+b.i = 100; // Do something to the argument
+return b;
+}
+int main() {
+B2 = bigfun(B);
+} ///:~
+Decoding the assembly output is a little more complicated here
+because most compilers use “helper” functions instead of putting
+all functionality inline. In main( ), the call to bigfun( )starts as you
+might guess – the entire contents of B is pushed on the stack. (Here,
+you might see some compilers load registers with the address of
+the Big and its size, then call a helper function to push the Big onto
+the stack.)
+In the previous code fragment, pushing the arguments onto the
+stack was all that was required before making the function call. In
+PassingBigStructures.cpp , however, you’ll see an additional
+action: the address of B2 is pushed before making the call, even
+though it’s obviously not an argument. To comprehend what’s
+going on here, you need to understand the constraints on the
+compiler when it’s making a function call.
+
+Q12: Function call stack frame
+When the compiler generates code for a function call, it first pushes
+all the arguments on the stack, then makes the call. Inside the
+function, code is generated to move the stack pointer down even
+farther to provide storage for the function’s local variables.
+(“Down” is relative here; your machine may increment or
+decrement the stack pointer during a push.) But during the
+assembly-language CALL, the CPU pushes the address in the
+program code where the function call came from, so the assembly-
+language RETURN can use that address to return to the calling
+point. This address is of course sacred, because without it your
+program will get completely lost. Here’s what the stack frame looks
+like after the CALL and the allocation of local variable storage in
+the function:
+ 
+Function arguments 
+Return address 
+Local variables 
+
+The code generated for the rest of the function expects the memory
+to be laid out exactly this way, so that it can carefully pick from the
+function arguments and local variables without touching the return
+address. I shall call this block of memory, which is everything used
+by a function in the process of the function call, the function frame.
+You might think it reasonable to try to return values on the stack.
+The compiler could simply push it, and the function could return
+an offset to indicate how far down in the stack the return value
+begins.
+
+Q13: Problem of re-entrancy with returning values on the stack
+The problem occurs because functions in C and C++ support
+interrupts; that is, the languages are re-entrant. They also support
+recursive function calls. This means that at any point in the
+execution of a program an interrupt can occur without breaking the
+program. Of course, the person who writes the interrupt service
+routine (ISR) is responsible for saving and restoring all the registers
+that are used in the ISR, but if the ISR needs to use any memory
+further down on the stack, this must be a safe thing to do.(You can
+think of an ISR as an ordinary function with no arguments and
+void return value that saves and restores the CPU state. An ISR
+function call is triggered by some hardware event instead of an
+explicit call from within a program.)
+Now imagine what would happen if an ordinary function tried to
+return values on the stack. You can’t touch any part of the stack
+that’s above the return address, so the function would have to push
+the values below the return address. But when the assembly-
+language RETURN is executed, the stack pointer must be pointing
+to the return address (or right below it, depending on your
+machine), so right before the RETURN, the function must move the
+stack pointer up, thus clearing off all its local variables. If you’re
+trying to return values on the stack below the return address, you
+become vulnerable at that moment because an interrupt could
+come along. The ISR would move the stack pointer down to hold
+its return address and its local variables and overwrite your return
+value.To solve this problem, the caller could be responsible for allocating
+the extra storage on the stack for the return values before calling
+the function. However, C was not designed this way, and C++
+must be compatible. As you’ll see shortly, the C++ compiler uses a
+more efficient scheme.Your next idea might be to return the value in some global data
+area, but this doesn’t work either. Reentrancy means that any
+function can be an interrupt routine for any other function,
+including the same function you’re currently inside. Thus, if you put
+the return value in a global area, you might return into the same
+function, which would overwrite that return value. The same logic
+applies to recursion.The only safe place to return values is in the registers, so you’re
+back to the problem of what to do when the registers aren’t large
+enough to hold the return value. The answer is to push the address
+of the return value’s destination on the stack as one of the function
+arguments, and let the function copy the return information
+directly into the destination. This not only solves all the problems,
+it’s more efficient.
+
+Q14: Bitwise versus initialization
+There’s a workable process for passing and
+returning large simple structures. But notice that all you have is a
+way to copy the bits from one place to another, which certainly
+works fine for the primitive way that C looks at variables. But in
+C++ objects can be much more sophisticated than a patch of bits;
+they have meaning. This meaning may not respond well to having
+its bits copied.
+Consider a simple example: a class that knows how many objects of
+its type exist at any one time. From Chapter 10, you know the way
+to do this is by including a static data member:
+//: C11:HowMany.cpp
+// A class that counts its objects
+#include <fstream>
+#include <string>
+using namespace std;
+ofstream out("HowMany.out");
+class HowMany {
+static int objectCount;
+public:
+HowMany() { objectCount++; }
+static void print(const string& msg = "") {
+if(msg.size() != 0) out << msg << ": ";
+out << "objectCount = "
+<< objectCount << endl;
+}
+~HowMany() {
+objectCount--;
+print("~HowMany()");
+}
+};
+int HowMany::objectCount = 0;
+// Pass and return BY VALUE:
+HowMany f(HowMany x) {
+x.print("x argument inside f()");
+return x;
+}
+int main() {
+HowMany h;
+HowMany::print("after construction of h");
+HowMany h2 = f(h);
+HowMany::print("after call to f()");
+} ///:~
+The class HowMany contains a static int objectCount and a static
+member function print( ) to report the value of that objectCount ,
+along with an optional message argument. The constructor
+increments the count each time an object is created, and the
+destructor decrements it.
+The output, however, is not what you would expect:
+after construction of h: objectCount = 1
+x argument inside f(): objectCount = 1
+~HowMany(): objectCount = 0
+after call to f(): objectCount = 0
+~HowMany(): objectCount = -1
+~HowMany(): objectCount = -2
+After h is created, the object count is one, which is fine. But after
+the call to f( ) you would expect to have an object count of two,
+because h2 is now in scope as well. Instead, the count is zero, which
+indicates something has gone horribly wrong. This is confirmed by
+the fact that the two destructors at the end make the object count go
+negative, something that should never happen.
+Look at the point inside f( ), which occurs after the argument is
+passed by value. This means the original object h exists outside the
+function frame, and there’s an additional object inside the function
+frame, which is the copy that has been passed by value. However,
+the argument has been passed using C’s primitive notion of
+bitcopying, whereas the C++ HowMany class requires true
+initialization to maintain its integrity, so the default bitcopy fails to
+produce the desired effect.
+When the local object goes out of scope at the end of the call to f( ),
+the destructor is called, which decrements objectCount , so outside
+the function, objectCount is zero. The creation of h2 is also
+performed using a bitcopy, so the constructor isn’t called there
+either, and when h and h2 go out of scope, their destructors cause
+the negative values of objectCount .
+
+Q15: Copy constructor solving bitwise copy issue
+problem occurs because the compiler makes an assumption
+about how to create a new object from an existing object. When you
+pass an object by value, you create a new object, the passed object
+inside the function frame, from an existing object, the original
+object outside the function frame. This is also often true when
+returning an object from a function. In the expression
+HowMany h2 = f(h);
+h2, a previously unconstructed object, is created from the return
+value of f( ), so again a new object is created from an existing one.
+The compiler’s assumption is that you want to perform this
+creation using a bitcopy, and in many cases this may work fine, but
+in HowMany it doesn’t fly because the meaning of initialization
+goes beyond simply copying. Another common example occurs if
+the class contains pointers – what do they point to, and should you
+copy them or should they be connected to some new piece of
+memory?
+Fortunately, you can intervene in this process and prevent the
+compiler from doing a bitcopy. You do this by defining your own
+function to be used whenever the compiler needs to make a new
+object from an existing object. Logically enough, you’re making a
+new object, so this function is a constructor, and also logically
+enough, the single argument to this constructor has to do with the
+object you’re constructing from. But that object can’t be passed into
+the constructor by value because you’re trying to define the function
+that handles passing by value, and syntactically it doesn’t make
+sense to pass a pointer because, after all, you’re creating the new
+object from an existing object. Here, references come to the rescue,
+so you take the reference of the source object. This function is called
+the copy-constructor and is often referred to as X(X&), which is its
+appearance for a class called X.If you create a copy-constructor, the compiler will not perform a
+bitcopy when creating a new object from an existing one. It will
+always call your copy-constructor. So, if you don’t create a copy-
+constructor, the compiler will do something sensible, but you have
+the choice of taking over complete control of the process.
+
+Q16: Why copy constructor uses references over pointers
+1: References cannot be NULL. OK, it's possible to create a NULL reference, but it's also possible to
+cast a std::vector<int>* into a std::vector<SomeType>*. That doesn't mean such a cast  
+has defined behavior. And neither does creating a NULL reference. Pointers have defined behavior 
+when set to NULL; references do not. References are therefore always expected to refer to actual objects.
+2: Variables and temporaries cannot be implicitly converted into pointers to their types. For obvious 
+reasons. We don't want pointers to temporaries running around, which is why the standard 
+expressly forbids doing it (at least when the compiler can tell you are doing it). But we are allowed 
+to have references to them; these are implicitly created.
+3: Because of point number 2, using pointers rather than references would require every copy 
+operation to use the address-of operator (&). Oh wait, the C++ committee foolishly allowed that to 
+be overloaded. So any copy operation would need to actually use std::addressof, a C++11 
+feature, to get the address. So every copy would need to look like 
+Type t{std::addressof(v)}; Or you could just use references.
+
+Q17: Default copy constructor
+Because the copy-constructor implements pass and return by value,
+it’s important that the compiler creates one for you in the case of
+simple structures – effectively, the same thing it does in C.
+However, all you’ve seen so far is the default primitive behavior: a
+bitcopy.When more complex types are involved, the C++ compiler will still
+automatically create a copy-constructor if you don’t make one.
+Again, however, a bitcopy doesn’t make sense, because it doesn’t
+necessarily implement the proper meaning. The process the compiler goes through to synthesize a copy-constructor
+is called memberwise initialization.
+It’s always best to create your own copy-constructor instead of
+letting the compiler do it for you. This guarantees that it will be
+under your control.
+
+Q18: Alternatives to copy-construction
+At this point your head may be swimming, and you might be
+wondering how you could have possibly written a working class
+without knowing about the copy-constructor. But remember: You
+need a copy-constructor only if you’re going to pass an object of
+your class by value. If that never happens, you don’t need a copy-
+constructor.
+
+Q19: Preventing pass-by-value
+“But,” you say, “if I don’t make a copy-constructor, the compiler
+will create one for me. So how do I know that an object will never
+be passed by value?”
+There’s a simple technique for preventing pass-by-value: declare a
+private copy-constructor. You don’t even need to create a
+definition, unless one of your member functions or a friend
+function needs to perform a pass-by-value. If the user tries to pass
+or return the object by value, the compiler will produce an error
+message because the copy-constructor is private. It can no longer
+create a default copy-constructor because you’ve explicitly stated
+that you’re taking over that job.
+
+Q20: Functions that modify outside objects
+Reference syntax is nicer to use than pointer syntax, yet it clouds
+the meaning for the reader. For example, in the iostreams library
+one overloaded version of the get( ) function takes a char& as an
+argument, and the whole point of the function is to modify its
+argument by inserting the result of the get( ). However, when you
+read code using this function it’s not immediately obvious to you
+that the outside object is being modified:
+char c;
+cin.get(c);
+Instead, the function call looks like a pass-by-value, which suggests
+the outside object is not modified.
+Because of this, it’s probably safer from a code maintenance
+standpoint to use pointers when you’re passing the address of an
+argument to modify. If you always pass addresses as const
+references except when you intend to modify the outside object via
+the address, where you pass by non-const pointer, then your code
+is far easier for the reader to follow.
+
+Q21: Pointers to members
+A pointer is a variable that holds the address of some location. You
+can change what a pointer selects at runtime, and the destination of
+the pointer can be either data or a function. The C++
+pointer-to-member follows this same concept, except that what it
+selects is a location inside a class. The dilemma here is that a
+pointer needs an address, but there is no “address” inside a class;
+selecting a member of a class means offsetting into that class. You
+can’t produce an actual address until you combine that offset with
+the starting address of a particular object. The syntax of pointers to
+members requires that you select an object at the same time you’re
+dereferencing the pointer to member.
+Consider what happens if you have a pointer that happens
+to point to something inside a class object, even if it does in fact
+represent an offset into the object. To access what it’s pointing at,
+you must dereference it with *. But it’s an offset into an object, so
+you must also refer to that particular object. Thus, the * is combined
+with the object dereference. So the new syntax becomes –>* for a
+pointer to an object, and .* for the object or a reference, like this:
+Now, what is the syntax for defining pointerToMember ? Like any
+pointer, you have to say what type it’s pointing at, and you use a *
+in the definition. The only difference is that you must say what
+class of objects this pointer-to-member is used with. Of course, this
+is accomplished with the name of the class and the scope resolution
+operator. Thus,
+int ObjectClass::*pointerToMember;
+defines a pointer-to-member variable called pointerToMember that
+points to any int inside ObjectClass.You can also initialize the
+pointer-to-member when you define it (or at any other time)
+int ObjectClass::*pointerToMember = &ObjectClass::a;
+There is actually no “address” of ObjectClass::a because you’re just
+referring to the class and not an object of that class. Thus,
+&ObjectClass::a can be used only as pointer-to-member syntax.
+Also, pointers to members are quite limited: they can be assigned
+only to a specific location inside a class. You could not, for example,
+increment or compare them as you can with ordinary pointers.
+
+Q22: Pointers to functions
+A pointer to a function (introduced at the end of Chapter 3) is defined like this:
+int (*fp)(float);
+The parentheses around (*fp) are necessary to force the compiler to
+evaluate the definition properly. Without them this would appear
+to be a function that returns an int*.
+Parentheses also play an important role when defining and using
+pointers to member functions. If you have a function inside a class,
+you define a pointer to that member function by inserting the class
+name and scope resolution operator into an ordinary function
+pointer definition:
+//: C11:PmemFunDefinition.cpp
+class Simple2 {
+public:
+int f(float) const { return 1; }
+};
+int (Simple2::*fp)(float) const;
+int (Simple2::*fp2)(float) const = &Simple2::f;
+int main() {
+fp = &Simple2::f;
+} ///:~
+In the definition for fp2 you can see that a pointer to member
+function can also be initialized when it is created, or at any other
+time. Unlike non-member functions, the & is not optional when
+taking the address of a member function. However, you can give
+the function identifier without an argument list, because overload
+resolution can be determined by the type of the pointer to member.
+
+Q23: Use of Pointers to member functions
+The value of a pointer is that you can change what it points to at
+runtime, which provides an important flexibility in your
+programming because through a pointer you can select or change
+The initialization of the pointers-to-members in the constructor
+may seem overspecified. Shouldn’t you be able to say
+fptr[1] = &g;
+because the name g occurs in the member function, which is
+automatically in the scope of the class? The problem is this doesn’t
+conform to the pointer-to-member syntax, which is required so
+everyone, especially the compiler, can figure out what’s going on.
+Similarly, when the pointer-to-member is dereferenced, it seems
+like
+(this->*fptr[i])(j);
+is also over-specified; this looks redundant. Again, the syntax
+requires that a pointer-to-member always be bound to an object
+when it is dereferenced.
+
+Q24: Re-assigning or Re-seating references
+What i have done actually comes under reassigning the reference or not ?
+No. It doesn't. You are actually reassigning the value, and you are not rebinding the reference.
+For your example, when you do int &ri = i;, the ri is bound to i for its lifetime. 
+When you do ri = j;, you are simply assigning the value of j to ri. ri still is referred to i. It's as good ad i = j;
+If you understand pointers well then, always think the reference as analogical interpretation of T* const where T is any type.
+
+
