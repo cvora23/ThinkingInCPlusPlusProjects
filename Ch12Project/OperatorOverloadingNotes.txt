@@ -1,0 +1,445 @@
+Operator Overloading
+==============================
+
+Q1: Basic definition of operator overloading
+Operator overloading is just “syntactic sugar,” which
+means it is simply another way for you to make a
+function call.The difference is that the arguments for this function don’t appear
+inside parentheses, but instead they surround or are next to
+characters you’ve always thought of as immutable operators.
+There are two differences between the use of an operator and an
+ordinary function call. The syntax is different; an operator is often
+“called” by placing it between or sometimes after the arguments.
+The second difference is that the compiler determines which
+“function” to call.But in C++, it’s possible to define new operators that work with
+classes. This definition is just like an ordinary function definition
+except that the name of the function consists of the keyword
+operatorfollowed by the operator. That’s the only difference, and it
+becomes a function like any other function, which the compiler
+calls when it sees the appropriate pattern.
+ 
+Q2: Warning and reassurance about operator overloading
+You have no reason to overload an operator except if it will make the
+code involving your class easier to write and especially easier to
+read. (Remember, code is read much more than it is written.) If this
+isn’t the case, don’t bother.Another common response to operator overloading is panic;
+suddenly, C operators have no familiar meaning anymore.
+“Everything’s changed and all my C code will do different things!”
+This isn’t true. All the operators used in expressions that contain
+only built-in data types cannot be changed. You can never overload
+operators such that
+1 << 4;
+behaves differently, or
+1.414 << 2;
+has meaning. Only an expression containing a user-defined type
+can have an overloaded operator.
+
+Q3:Syntax for operator overloading
+Defining an overloaded operator is like defining a function, but the
+name of that function is operator@ , in which @ represents the
+operator that’s being overloaded. The number of arguments in the
+overloaded operator’s argument list depends on two factors:
+1.Whether it’s a unary operator (one argument) or a binary
+operator (two arguments).
+2.Whether the operator is defined as a global function (one
+argument for unary, two for binary) or a member function
+(zero arguments for unary, one for binary – the object
+becomes the left-hand argument).For non-conditional operators (conditionals usually return a
+Boolean value), you’ll almost always want to return an object or
+reference of the same type you’re operating on if the two
+arguments are the same type. (If they’re not the same type, the
+interpretation of what it should produce is up to you.)
+
+Q4: Increment and Decrement operator
+Increment & decrement
+The overloaded ++ and – – operators present a dilemma because
+you want to be able to call different functions depending on
+whether they appear before (prefix) or after (postfix) the object
+they’re acting upon. The solution is simple, but people sometimes
+find it a bit confusing at first. When the compiler sees, for example,
+++a (a pre-increment), it generates a call to operator++(a) ; 
+but when it sees a++, it generates a call to operator++(a, int) . That is,
+the compiler differentiates between the two forms by making calls
+to different overloaded functions.All the user sees is that a different function gets called for the prefix
+and postfix versions. Underneath, however, the two functions calls have different signatures, so they link to two different function
+bodies. The compiler passes a dummy constant value for the int
+argument (which is never given an identifier because the value is
+never used) to generate the different signature for the postfix
+version.
+
+Q5:Operator = 
+You can see that operator=is only allowed to be a member function.
+Notice that all of the assignment operators have code to check for
+self-assignment; this is a general guideline. In some cases this is not
+necessary; for example, with operator+=you often want to say
+A+=A and have it add A to itself. The most important place to
+check for self-assignment is operator=because with complicated
+objects disastrous results may occur. (In some cases it’s OK, but you
+should always keep it in mind when writing operator= .)
+
+Q6:Arguments and return values when operator overloading
+Although you can pass and return arguments any way you want to,
+the choices in these examples were not selected at random. They
+follow a logical pattern, the same one you’ll want to use in most of
+your choices.
+1. As with any function argument, if you only need to read
+from the argument and not change it, default to passing it as
+a const reference. Ordinary arithmetic operations (like + and
+–, etc.) and Booleans will not change their arguments, so pass
+by const reference is predominantly what you’ll use. When
+the function is a class member, this translates to making it a
+const member function. Only with the operator-assignments
+(like +=) and the operator= , which change the left-hand
+argument, is the left argument not a constant, but it’s still
+passed in as an address because it will be changed.
+2. The type of return value you should select depends on the
+expected meaning of the operator. (Again, you can do
+anything you want with the arguments and return values.) If
+the effect of the operator is to produce a new value, you will
+need to generate a new object as the return value. For
+example, Integer::operator+ must produce an Integerobject
+that is the sum of the operands. This object is returned by
+value as a const, so the result cannot be modified as an
+lvalue.
+3. All the assignment operators modify the lvalue. To allow the
+result of the assignment to be used in chained expressions,
+like a=b=c, it’s expected that you will return a reference to
+that same lvalue that was just modified. But should this
+reference be a const or nonconst? Although you read a=b=c
+from left to right, the compiler parses it from right to left, so
+you’re not forced to return a nonconst to support assignment
+chaining. However, people do sometimes expect to be able to
+perform an operation on the thing that was just assigned to,
+such as (a=b).func( ); to call func( ) on a after assigning b to
+it. Thus, the return value for all of the assignment operators
+should be a nonconst reference to the lvalue.
+4. For the logical operators, everyone expects to get at worst an
+int back, and at best a bool. (Libraries developed before most
+compilers supported C++’s built-in bool will use int or an
+equivalent typedef.)
+5. The increment and decrement operators present a dilemma because
+of the pre- and postfix versions. Both versions change the object
+and so cannot treat the object as a const. The prefix version returns
+the value of the object after it was changed, so you expect to get
+back the object that was changed. Thus, with prefix you can just
+return *this as a reference. The postfix version is supposed to
+return the value before the value is changed, so you’re forced to
+create a separate object to represent that value and return it. So
+with postfix you must return by value if you want to preserve the
+expected meaning. (Note that you’ll sometimes find the increment
+and decrement operators returning an int or bool to indicate, for
+example, whether an object designed to move through a list is at
+the end of that list.) Now the question is: Should these be returned
+as const or nonconst? If you allow the object to be modified and
+someone writes (++a).func().func() will be operating on a itself,
+but with (a++).func().func() operates on the temporary object
+returned by the postfix operator++. 
+Temporary objects are automatically const, so this would be flagged by the compiler, but
+for consistency’s sake it may make more sense to make them both
+const, as was done here. Or you may choose to make the prefix
+version non-const and the postfix const. Because of the variety of
+meanings you may want to give the increment and decrement
+operators, they will need to be considered on a case-by-case basis.
+
+Q7: Returning by value as a const during operator overloading
+Returning by value as a const can seem a bit subtle at first, so it
+deserves a bit more explanation. Consider the binary operator+ . If
+you use it in an expression such as f(a+b), the result of a+b
+becomes a temporary object that is used in the call to f( ). Because
+it’s a temporary, it’s automatically const, so whether you explicitly
+make the return value const or not has no effect.
+However, it’s also possible for you to send a message to the return
+value of a+b, rather than just passing it to a function. For example,
+you can say (a+b).g( ) , in which g( ) is some member function of
+Integer, in this case. By making the return value const, you state
+that only a const member function can be called for that return
+value. This is const-correct, because it prevents you from storing
+potentially valuable information in an object that will most likely
+be lost.
+
+Q8: Return value optimization
+When new objects are created to return by value, notice the form
+used. In operator+ , for example:
+return Integer(left.i + right.i);
+This may look at first like a “function call to a constructor,” but it’s
+not. The syntax is that of a temporary object; the statement says
+“make a temporary Integer object and return it.” Because of this,
+you might think that the result is the same as creating a named
+local object and returning that. However, it’s quite different. If you
+were to say instead:
+Integer tmp(left.i + right.i);
+return tmp; three things will happen. First, the tmp object is created including
+its constructor call. Second, the copy-constructor copies the tmp to
+the location of the outside return value. Third, the destructor is
+called for tmp at the end of the scope.In contrast, the “returning a temporary” approach works quite
+differently. When the compiler sees you do this, it knows that you
+have no other need for the object it’s creating than to return it. The
+compiler takes advantage of this by building the object directly into
+the location of the outside return value. This requires only a single
+ordinary constructor call (no copy-constructor is necessary) and
+there’s no destructor call because you never actually create a local
+object. Thus, while it doesn’t cost anything but programmer
+awareness, it’s significantly more efficient. This is often called the
+return value optimization.
+
+Q9: Unusual operators
+The subscript, operator[ ] , must be a member function and it requires a single argument. 
+Because operator[ ] implies that the object it’s being called for acts like an array, you will often return a
+reference from this operator, so it can be conveniently used on the left-hand side of an equal sign. 
+The operators new and delete control dynamic storage allocation and can be overloaded in a number of different ways. 
+
+Q10: Comma operator
+The comma operator is called when it appears next to an object of
+the type the comma is defined for. However, “operator, ” is not
+called for function argument lists, only for objects that are out in
+the open, separated by commas. There doesn’t seem to be a lot of
+practical uses for this operator; it’s in the language for consistency.
+
+Q11: Operator ->
+The operator–> is generally used when you want to make an object
+appear to be a pointer. Since such an object has more “smarts” built
+into it than exist for a typical pointer, an object like this is often
+called a smart pointer. These are especially useful if you want to
+“wrap” a class around a pointer to make that pointer safe, or in the
+common usage of an iterator, which is an object that moves through
+a collection /container of other objects and selects them one at a time,
+without providing direct access to the implementation of the
+container.A pointer dereference operator must be a member function. 
+It has additional, atypical constraints: It must return an object (or
+reference to an object) that also has a pointer dereference operator,
+or it must return a pointer that can be used to select what the
+pointer dereference operator arrow is pointing at.
+Nested Iterator:
+It’s more common to see a “smart pointer” or “iterator” class nested
+within the class that it services.
+
+Q12:Operator->*
+The operator–>*is a binary operator that behaves like all the other
+binary operators. It is provided for those situations when you want
+to mimic the behavior provided by the built-in pointer-to-member
+syntax, described in the previous chapter.Just like operator-> ,
+the pointer-to-member dereference operator is generally used with some kind of object that represents a “smart
+pointer,” although the example shown here will be simpler so it’s
+understandable. The trick when defining operator->* is that it must
+return an object for which the operator( ) can be called with the
+arguments for the member function you’re calling.The function call operator( ) must be a member function, and it is
+unique in that it allows any number of arguments. It makes your object look like it’s actually a function. 
+Although you could define several overloaded operator( ) functions with different arguments,
+it’s often used for types that only have a single operation, or at least an especially prominent one.
+To create an operator->* you must first create a class with an
+operator( ) that is the type of object that operator->*will return.
+This class must somehow capture the necessary information so that
+when the operator( ) is called (which happens automatically), the
+pointer-to-member will be dereferenced for the object.  
+
+Q13: Operators you can't overload
+There are certain operators in the available set that cannot be
+overloaded. The general reason for the restriction is safety. If these
+operators were overloadable, it would somehow jeopardize or
+break safety mechanisms, make things harder, or confuse existing
+practice.
+•The member selection operator. Currently, the dot has a meaning for any member in a class, but if you allow it to be
+overloaded, then you couldn’t access members in the normal way; instead you’d have to use a pointer and the arrow
+operator-> . 
+•The pointer to member dereference operator.* , for the same reason as operator.
+•There’s no exponentiation operator. The most popular choice for this was operator** from Fortran, but this raised difficult
+parsing questions. Also, C has no exponentiation operator, so C++ didn’t seem to need one either because you can always
+perform a function call. An exponentiation operator would add a convenient notation, but no new language functionality to
+account for the added complexity of the compiler.
+•There are no user-defined operators. That is, you can’t make up new operators that aren’t currently in the set. Part of the
+problem is how to determine precedence, and part of the problem is an insufficient need to account for the necessary
+trouble.
+•You can’t change the precedence rules. They’re hard enough to remember as it is without letting people play with them.
+
+Q14: Non-member operators
+In some of the previous examples, the operators may be members
+or non-members, and it doesn’t seem to make much difference.
+This usually raises the question, “Which should I choose?” In
+general, if it doesn’t make any difference, they should be members,
+to emphasize the association between the operator and its class.
+When the left-hand operand is always an object of the current class,
+this works fine.
+However, sometimes you want the left-hand operand to be an
+object of some other class. A common place you’ll see this is when
+the operators << and >> are overloaded for iostreams. Since
+iostreams is a fundamental C++ library, you’ll probably want to
+overload these operators for most of your classes, so the process is
+worth memorizing
+
+Q15: Basic guidelines for members and non members operator overloading
+Murray1 suggests these guidelines for choosing between members
+and non-members:
+Operator                                    Recommended use
+1:  All unary operators                     member
+2:  = ( ) [ ] –> –>*                        must be member
+3:  += –= /= *= ^=                          member
+    &= |= %= >>= <<=
+4:  All other binary                        non-member
+    operators
+
+Q16: Overloading assignment
+When dealing with the = sign, it’s important to keep this distinction
+in mind: If the object hasn’t been created yet, initialization is
+required; otherwise the assignment operator=is used.
+It’s even better to avoid writing code that uses the = for
+initialization; instead, always use the explicit constructor form. The
+two constructions with the equal sign then become:
+Fee fee(1);
+Fee fum(fi);
+This way, you’ll avoid confusing your readers.
+
+Q17: Behavior of operator=
+operator=can be only a member function. It is intimately connected to the object on the left
+side of the ‘=’. If it was possible to define operator=globally, then
+you might attempt to redefine the built-in ‘=’ sign:
+int operator=(int, MyType); // Global = not allowed!
+The compiler skirts this whole issue by forcing you to make
+operator=a member function.
+When you create an operator= , you must copy all of the necessary
+information from the right-hand object into the current object (that
+is, the object that operator=is being called for) to perform whatever
+you consider “assignment” for your class.
+
+Q18: Common mistakes assignment operator
+When you’re assigning two objects of the same type, you should always check first for self-
+assignment: is the object being assigned to itself? In some cases,
+it’s harmless if you perform the assignment
+operations anyway, but if changes are made to the implementation
+of the class, it can make a difference, and if you don’t do it as a
+matter of habit, you may forget and cause hard-to-find bugs.
+
+Q19:Pointers in classes
+What happens if the object is not so simple? For example, what if
+the object contains pointers to other objects? Simply copying a
+pointer means that you’ll end up with two objects pointing to the
+same storage location. In situations like these, you need to do
+bookkeeping of your own.
+There are two common approaches to this problem. 
+1:The simplest technique is to copy whatever the pointer refers to when you do an
+assignment or a copy-construction.
+2: Reference Counting
+
+Q20: Reference Counting
+Copy-constructor and operator=make a new copy of what the pointer points to, and the destructor deletes
+it. However, if your object requires a lot of memory or a high
+initialization overhead, you may want to avoid this copying. 
+A common approach to this problem is called reference counting.
+You give intelligence to the object that’s being pointed to so it knows
+how many objects are pointing to it. Then copy-construction or
+assignment means attaching another pointer to an existing object
+and incrementing the reference count. Destruction means reducing
+the reference count and destroying the object if the reference count
+goes to zero.
+
+Q21: Aliasing problem
+For reference counting approach what if you want to write to the object.
+More than one object may be using some pointer in class, so you’d be
+modifying someone else’s object as well as yours, which doesn’t
+seem very neighborly. To solve this “aliasing” problem, an
+additional technique called copy-on-write is used.Before writing to a
+block of memory, you make sure no one else is using it. If the
+reference count is greater than one, you must make yourself a
+personal copy of that block before writing it, so you don’t disturb
+someone else’s turf.  
+
+Q22: Automatic operatore= creation
+Because assigning an object to another object of the same type is an
+activity most people expect to be possible, the compiler will
+automatically create a type::operator=(type) if you don’t make one.
+The behavior of this operator mimics that of the automatically
+created copy-constructor; if the class contains objects (or is
+inherited from another class), the operator=for those objects is
+called recursively. This is called memberwise assignment.
+In general, you don’t want to let the compiler do this for you. With
+classes of any sophistication (especially if they contain pointers!)
+you want to explicitly create an operator= .If you really don’t want
+people to perform assignment, declare operator= as a private
+function. (You don’t need to define it unless you’re using it inside
+the class.)
+
+Q23: Automatic type conversion
+In C and C++, if the compiler sees an expression or function call
+using a type that isn’t quite the one it needs, it can often perform an
+automatic type conversion from the type it has to the type it wants.
+In C++, you can achieve this same effect for user-defined types by
+defining automatic type conversion functions. These functions
+come in two flavors: a particular type of constructor and an
+overloaded operator.
+
+Q24: Constructor conversion
+If you define a constructor that takes as its single argument an
+object (or reference) of another type, that constructor allows the
+compiler to perform an automatic type conversion.
+
+Q25: Preventing constructor conversion
+There are times when automatic type conversion via the
+constructor can cause problems. To turn it off, you modify the
+constructor by prefacing with the keyword explicit(which only
+works with constructors).
+
+Q26: Operator conversion
+The second way to produce automatic type conversion is through
+operator overloading. You can create a member function that takes
+the current type and converts it to the desired type using the
+operator keyword followed by the type you want to convert to.
+This form of operator overloading is unique because you don’t
+appear to specify a return type – the return type is the name of the
+operator you’re overloading. With the constructor technique, the destination class is performing
+the conversion, but with operators, the source class performs the
+conversion. The value of the constructor technique is that you can
+add a new conversion path to an existing system as you’re creating
+a new class.However, creating a single-argument constructor
+always defines an automatic type conversion (even if it’s got more
+than one argument, if the rest of the arguments are defaulted),
+which may not be what you want (in which case you can turn it off
+using explicit). In addition, there’s no way to use a constructor
+conversion from a user-defined type to a built-in type; this is
+possible only with operator overloading.
+
+Q27:Reflexivity
+One of the most convenient reasons to use global overloaded
+operators instead of member operators is that in the global
+versions, automatic type conversion may be applied to either
+operand, whereas with member objects, the left-hand operand must
+already be the proper type. If you want both operands to be
+converted, the global versions can save a lot of coding.
+Sometimes you want to be able to restrict the use of your operators
+by making them members. For example, when multiplying a matrix
+by a vector, the vector must go on the right. But if you want your
+operators to be able to convert either argument, make the operator
+a friend function.Fortunately, the compiler will not take 1 – 1 and convert both
+arguments to Number objects and then call operator– . That would
+mean that existing C code might suddenly start to work differently.
+The compiler matches the “simplest” possibility first, which is the
+built-in operator for the expression 1 – 1.
+
+Q28: Pitfalls in automatic type conversion
+Because the compiler must choose how to quietly perform a type
+conversion, it can get into trouble if you don’t design your
+conversions correctly. A simple and obvious situation occurs with a
+class X that can convert itself to an object of class Y with an
+operator Y(). If class Y has a constructor that takes a single
+argument of type X, this represents the identical type conversion.
+The compiler now has two ways to go from X to Y, so it will
+generate an ambiguity error when that conversion occurs
+The obvious solution to this problem is not to do it. Just provide a
+single path for automatic conversion from one type to another.
+
+
+Q29: Fan out problem during automatic conversion
+A more difficult problem to spot occurs when you provide
+automatic conversion to more than one type. This is sometimes
+called fan-out. Again, the solution – and the general watchword with automatic
+type conversion – is to provide only a single automatic conversion
+from one type to another. You can have conversions to other types;
+they just shouldn’t be automatic. You can create explicit function
+calls with names like makeA( ) and makeB( ) .
+
+Q30: Automatic type conversion usage
+Use automatic type conversion carefully. As with all operator
+overloading, it’s excellent when it significantly reduces a coding
+task, but it’s usually not worth using gratuitously.
+
+
+
+  
