@@ -1,0 +1,384 @@
+Dynamic Object Creation
+=================================
+
+Q1: Dynamic storage allocation and deallocation C++
+To solve the general programming problem, it’s essential that you
+be able to create and destroy objects at runtime. Of course, C has
+always provided the dynamic memory allocation functions malloc( )
+and free( ) (along with variants of malloc( ) that allocate storage
+from the heap (also called the free store) at runtime.
+However, this simply won’t work in C++. The constructor doesn’t
+allow you to hand it the address of the memory to initialize, and for
+good reason. If you could do that, you might:
+1.Forget. Then guaranteed initialization of objects in C++
+wouldn’t be guaranteed.
+2.Accidentally do something to the object before you initialize
+it, expecting the right thing to happen.
+3.Hand it the wrong-sized object.
+And of course, even if you did everything correctly, anyone who
+modifies your program is prone to the same errors. Improper
+initialization is responsible for a large portion of programming
+problems, so it’s especially important to guarantee constructor calls
+for objects created on the heap.
+So how does C++ guarantee proper initialization and cleanup, but
+allow you to create objects dynamically on the heap?
+The answer is by bringing dynamic object creation into the core of
+the language. malloc( )and free( ) are library functions, and thus
+outside the control of the compiler. However, if you have an
+operator to perform the combined act of dynamic storage allocation
+and initialization and another operator to perform the combined act
+of cleanup and releasing storage, the compiler can still guarantee
+that constructors and destructors will be called for all objects.
+
+Q2: Object creation
+When a C++ object is created, two events occur:
+1. Storage is allocated for the object.
+2. The constructor is called to initialize that storage.
+By now you should believe that step two always happens.C++
+enforces it because uninitialized objects are a major source of
+program bugs. It doesn’t matter where or how the object is created
+– the constructor is always called.
+
+Q3: Object storage allocation
+1: Storage can be allocated before the program begins, in the
+static storage area. This storage exists for the life of the
+program.
+2: Storage can be created on the stack whenever a particular
+execution point is reached (an opening brace). That storage is
+released automatically at the complementary execution point
+(the closing brace). These stack-allocation operations are built
+into the instruction set of the processor and are very efficient.
+However, you have to know exactly how many variables you
+need when you’re writing the program so the compiler can
+generate the right code.
+3: Storage can be allocated from a pool of memory called the
+heap (also known as the free store). This is called dynamic
+memory allocation. To allocate this memory, a function is
+called at runtime; this means you can decide at any time that
+you want some memory and how much you need. You are
+also responsible for determining when to release the
+memory, which means the lifetime of that memory can be as
+long as you choose – it isn’t determined by scope.
+Often these three regions are placed in a single contiguous piece of
+physical memory: the static area, the stack, and the heap (in an
+order determined by the compiler writer). However, there are no
+rules. The stack may be in a special place, and the heap may be
+implemented by making calls for chunks of memory from the
+operating system. As a programmer, these things are normally
+shielded from you, so all you need to think about is that the
+memory is there when you call for it.
+
+Q4: C's approach to the heap
+To allocate memory dynamically at runtime, C provides functions
+in its standard library: malloc( )and its variants calloc( )and
+realloc( )to produce memory from the heap, and free( )to release
+the memory back to the heap. These functions are pragmatic but
+primitive and require understanding and care on the part of the
+programmer.malloc( )returns a void* because it just produces a patch
+of memory, not an object. C++ doesn’t allow a void* to be assigned
+to any other pointer, so it must be cast.
+
+Obj* obj = (Obj*)malloc(sizeof(Obj));
+Here, the user must determine the size of the object (one place for
+an error).Because malloc( )may fail to find any memory (in which case it
+returns zero), you must check the returned pointer to make sure it
+was successful.
+If users make it this far correctly, they must remember to initialize
+the object before it is used. Notice that a constructor was not used
+because the constructor cannot be called explicitly1 – it’s called for
+you by the compiler when an object is created. The problem here is
+that the user now has the option to forget to perform the 
+initialization before the object is used, thus reintroducing a major
+source of bugs.It also turns out that many programmers seem to find C’s dynamic
+memory functions too confusing and complicated; it’s not
+uncommon to find C programmers who use virtual memory
+machines allocating huge arrays of variables in the static storage
+area to avoid thinking about dynamic memory allocation. Because
+C++ is attempting to make library use safe and effortless for the
+casual programmer, C’s approach to dynamic memory is
+unacceptable.
+
+Q5: operator new
+The solution in C++ is to combine all the actions necessary to create
+an object into a single operator called new. When you create an
+object with new (using a new-expression), it allocates enough storage
+on the heap to hold the object and calls the constructor for that
+storage. Thus, if you say
+MyType *fp = new MyType(1,2); at runtime, the equivalent of malloc(sizeof(MyType))
+ is called (often, it is literally a call to malloc( ) , and the constructor for
+MyType is called with the resulting address as the this pointer,
+using (1,2) as the argument list. By the time the pointer is assigned
+to fp, it’s a live, initialized object – you can’t even get your hands
+on it before then. It’s also automatically the proper MyType type so
+no cast is necessary.The default new checks to make sure the memory allocation was
+successful before passing the address to the constructor, so you
+don’t have to explicitly determine if the call was successful. Later in
+the chapter you’ll find out what happens if there’s no memory left.
+You can create a new-expression using any constructor available
+for the class. If the constructor has no arguments, you write the
+new-expression without the constructor argument list:
+MyType *fp = new MyType;
+Notice how simple the process of creating objects on the heap
+becomes – a single expression, with all the sizing, conversions, and
+safety checks built in. It’s as easy to create an object on the heap as
+it is on the stack.
+
+Q6: operator delete
+The complement to the new-expression is the delete-expression,
+which first calls the destructor and then releases the memory (often
+with a call to free( )). Just as a new-expression returns a pointer to
+the object, a delete-expression requires the address of an object.
+delete fp;
+This destructs and then releases the storage for the dynamically
+allocated MyType object created earlier.
+delete can be called only for an object created by new. If you
+malloc( ) (or calloc( )or realloc( ) an object and then delete it, the
+behavior is undefined. Because most default implementations of
+new and delete use malloc( )and free( ), you’d probably end up
+releasing the memory without calling the destructor.
+If the pointer you’re deleting is zero, nothing will happen. For this
+reason, people often recommend setting a pointer to zero
+immediately after you delete it, to prevent deleting it twice.
+Deleting an object more than once is definitely a bad thing to do,
+and will cause problems.
+
+Q7: Delete void* is probably a bug
+If you delete a void pointer, the only thing that happens is the memory gets released, because
+there’s no type information and no way for the compiler to know
+what destructor to call.only thing that happens is the memory gets released, because
+there’s no type information and no way for the compiler to know
+what destructor to call.If you have a memory leak in your program, search through all the
+delete statements and check the type of pointer being deleted. If it’s
+a void* then you’ve probably found one source of your memory
+leak (C++ provides ample other opportunities for memory leaks,
+however).
+
+Q8: Cleanup responsibility with pointers
+If you add pointers to objects created on the stack
+and objects created on the heap to the same container because a
+delete-expression is unsafe for a pointer that hasn’t been allocated
+on the heap. (And when you fetch a pointer back from the
+container, how will you know where its object has been allocated?)
+
+Q9: new and delete for arrays
+In C++, you can create arrays of objects on the stack or on the heap
+with equal ease, and (of course) the constructor is called for each
+object in the array. There’s one constraint, however: There must be
+a default constructor, except for aggregate initialization on the
+stack, because a constructor with no arguments must be called for every object.
+When creating arrays of objects on the heap using new, there’s
+something else you must do. An example of such an array is
+MyType* fp = new MyType[100];
+This allocates enough storage on the heap for 100 MyType objects
+and calls the constructor for each one. Now, however, you simply
+have a MyType*, which is exactly the same as you’d get if you said
+MyType* fp2 = new MyType;
+to create a single object. Because you wrote the code, you know that
+fp is actually the starting address of an array, so it makes sense to
+select array elements using an expression like fp[3]. But what
+happens when you destroy the array? The statements
+delete fp2; // OK
+delete fp; // Not the desired effect
+look exactly the same, and their effect will be the same. The
+destructor will be called for the MyType object pointed to by the
+given address, and then the storage will be released. For fp2 this is
+fine, but for fp this means that the other 99 destructor calls won’t be
+made. The proper amount of storage will still be released, however,
+because it is allocated in one big chunk, and the size of the whole
+chunk is stashed somewhere by the allocation routine.
+The solution requires you to give the compiler the information that
+this is actually the starting address of an array. 
+This is accomplished with the following syntax:
+delete []fp;
+The empty brackets tell the compiler to generate code that fetches
+the number of objects in the array, stored somewhere when the
+array is created, and calls the destructor for that many array
+objects. This is actually an improved syntax from the earlier form,
+which you may still occasionally see in old code:
+delete [100]fp;
+which forced the programmer to include the number of objects in
+the array and introduced the possibility that the programmer
+would get it wrong. The additional overhead of letting the compiler
+handle it was very low, and it was considered better to specify the
+number of objects in one place instead of two.
+
+Q10: Running out of storrage
+What happens when the operator new cannot find a contiguous
+block of storage large enough to hold the desired object? A special
+function called the new-handler is called. Or rather, a pointer to a
+function is checked, and if the pointer is nonzero, then the function
+it points to is called.The default behavior for the new-handler is to throw an exception.
+However, if you’re using heap allocation in your program, it’s wise to at least replace the new-
+handler with a message that says you’ve run out of memory and
+then aborts the program. That way, during debugging, you’ll have
+a clue about what happened. For the final program you’ll want to
+use more robust recovery.You replace the new-handler by including new.h and then calling
+set_new_handler( )  with the address of the function you want installed
+The behavior of the new-handler is tied to operator new , so if you
+overload operator new (covered in the next section) the new-
+handler will not be called by default. If you still want the new-
+handler to be called you’ll have to write the code to do so inside
+your overloaded operator new .Of course, you can write more sophisticated new-handlers, even
+one to try to reclaim memory (commonly known as a garbage collector). 
+This is not a job for the novice programmer.
+
+Q11: Overloading new and delete
+When you create a new-expression, two things occur. First, storage
+is allocated using the operator new , then the constructor is called.
+In a delete-expression, the destructor is called, then storage is
+deallocated using the operator delete . The constructor and destructor calls are 
+never under your control (otherwise you might accidentally subvert them), but you can change the storage
+allocation functions operator new and operator delete .
+The memory allocation system used by new and delete is designed
+for general-purpose use. In special situations, however, it doesn’t
+serve your needs. The most common reason to change the allocator
+is efficiency: You might be creating and destroying so many objects
+of a particular class that it has become a speed bottleneck.C++
+allows you to overload new and delete to implement your own
+storage allocation scheme, so you can handle problems like this.
+Another issue is heap fragmentation. By allocating objects of
+different sizes it’s possible to break up the heap so that you
+effectively run out of storage. That is, the storage might be
+available, but because of fragmentation no piece is big enough to
+satisfy your needs. By creating your own allocator for a particular
+class, you can ensure this never happens.In embedded and real-time systems, a program may have to run for
+a very long time with restricted resources. Such a system may also
+require that memory allocation always take the same amount of
+time, and there’s no allowance for heap exhaustion or
+fragmentation. A custom memory allocator is the solution;
+otherwise, programmers will avoid using new and delete
+altogether in such cases and miss out on a valuable C++ asset.
+When you overload operator new and operator delete , it’s
+important to remember that you’re changing only the way raw
+storage is allocated. The compiler will simply call your new instead
+of the default version to allocate storage, then call the constructor
+for that storage. So, although the compiler allocates storage and
+calls the constructor when it sees new, all you can change when
+you overload new is the storage allocation portion. (delete has a
+similar limitation.)When you overload operator new, you also replace the behavior
+when it runs out of memory, so you must decide what to do in
+your operator new : return zero, write a loop to call the new-
+handler and retry allocation, or (typically) throw a bad_alloc
+exception.Overloading new and delete is like overloading any other operator.
+However, you have a choice of overloading the global allocator or
+using a different allocator for a particular class.
+
+Q12: Overloading global new and delete
+This is the drastic approach, when the global versions of new and
+delete are unsatisfactory for the whole system. If you overload the
+global versions, you make the defaults completely inaccessible –
+you can’t even call them from inside your redefinitions.
+The overloaded new must take an argument of size_t (the Standard
+C standard type for sizes). This argument is generated and passed
+to you by the compiler and is the size of the object you’re
+responsible for allocating. You must return a pointer either to an
+object of that size (or bigger, if you have some reason to do so), or
+to zero if you can’t find the memory (in which case the constructor
+is not called!). However, if you can’t find the memory, you should
+probably do something more informative than just returning zero,
+like calling the new-handler or throwing an exception, to signal
+that there’s a problem.The return value of operator new is a void*, not a pointer to any
+particular type. All you’ve done is produce memory, not a finished
+object – that doesn’t happen until the constructor is called, an act
+the compiler guarantees and which is out of your control.
+The operator delete takes a void* to memory that was allocated by
+operator new . It’s a void* because operator delete only gets the
+pointer after the destructor is called, which removes the object-ness
+from the piece of storage. The return type is void.
+
+Q13: Overloading new and delete for a class
+Although you don’t have to explicitly say static, when you
+overload new and delete for a class, you’re creating static member
+functions.As before, the syntax is the same as overloading any
+other operator. When the compiler sees you use new to create an
+object of your class, it chooses the member operator new over the
+global version. However, the global versions of new and delete are
+used for all other types of objects (unless they have their own new
+and delete).
+
+Q14: Overloading new and delete for arrays
+If you overload operator new and delete for a class, those operators
+are called whenever you create an object of that class. However, if
+you create an array of those class objects, the global operatornew is
+called to allocate enough storage for the array all at once, and the
+global operatordelete is called to release that storage.You can
+control the allocation of arrays of objects by overloading the special
+array versions of operator new[ ] and operator delete[ ] for the
+class. When array version of operator new is used,  notice that the size
+requested is four more bytes than expected. This extra four bytes is
+where the system keeps information about the array, in particular,
+the number of objects in the array. That way, when you say
+delete []Widget;
+the brackets tell the compiler it’s an array of objects, so the compiler
+generates code to look for the number of objects in the array and to
+call the destructor that many times. You can see that, even though
+the array operator new and operator delete are only called once for
+the entire array chunk, the default constructor and destructor are
+called for each object in the array.
+
+Q15: Constructor calls during storage allocation failure
+what happens if the storage allocation in new fails? The constructor is not called in that
+case, so although you still have an unsuccessfully created object, at
+least you haven’t invoked the constructor and handed it a zero this
+pointer.In earlier versions of C++ it was standard practice to return zero
+from new if storage allocation failed. That would prevent 
+construction from occurring. However, if you try to return zero
+from new with a Standard-conforming compiler, it should tell you
+that you ought to throw bad_allocinstead.
+
+Q16: Placement new and delete
+There are two other, less common, uses for overloading operator
+new.
+1.You may want to place an object in a specific location in
+memory. This is especially important with hardware-oriented
+embedded systems where an object may be synonymous
+with a particular piece of hardware.
+
+2.You may want to be able to choose from different allocators
+when calling new.
+Both of these situations are solved with the same mechanism: The
+overloaded operator new can take more than one argument. As
+you’ve seen before, the first argument is always the size of the
+object, which is secretly calculated and passed by the compiler. But
+the other arguments can be anything you want – the address you
+want the object placed at, a reference to a memory allocation
+function or object, or anything else that is convenient for you.
+The way that you pass the extra arguments to operator new during
+a call may seem slightly curious at first. You put the argument list
+(without the size_t argument, which is handled by the compiler)
+after the keyword new and before the class name of the object
+you’re creating. For example,
+X* xp = new(a) X;
+will pass a as the second argument to operator new . 
+Of course, this can work only if such an operator new has been declared.
+A dilemma occurs when you want to destroy the object. There’s
+only one version of operator delete , so there’s no way to say, “Use
+my special deallocator for this object.” You want to call the
+destructor, but you don’t want the memory to be released by the
+dynamic memory mechanism because it wasn’t allocated on the
+heap.The answer is a very special syntax. You can explicitly call the
+destructor, as in
+xp->X::~X(); // Explicit destructor call
+A stern warning is in order here. Some people see this as a way to
+destroy objects at some time before the end of the scope, rather
+than either adjusting the scope or (more correctly) using dynamic
+object creation if they want the object’s lifetime to be determined at
+runtime. You will have serious problems if you call the destructor
+this way for an ordinary object created on the stack because the
+destructor will be called again at the end of the scope. If you call
+the destructor this way for an object that was created on the heap,
+the destructor will execute, but the memory won’t be released,
+which probably isn’t what you want. The only reason that the
+destructor can be called explicitly this way is to support the
+placement syntax for operator new .There’s also a placement operator delete that is only called if a
+constructor for a placement new expression throws an exception
+(so that the memory is automatically cleaned up during the
+exception). The placement operator delete has an argument list that
+corresponds to the placement operator new that is called before the
+constructor throws the exception.
+
+
+
+
+
+ 
