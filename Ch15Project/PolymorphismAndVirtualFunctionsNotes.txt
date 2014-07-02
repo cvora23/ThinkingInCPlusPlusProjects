@@ -1,0 +1,664 @@
+Polymorphism and Virtual Functions
+====================================
+
+Q1: Need and use of polymorphism
+Polymorphism (implemented in C++ with virtual
+functions) is the third essential feature of an object-
+oriented programming language, after data abstraction
+and inheritance.It provides another dimension of separation of interface from
+implementation, to decouple what from how. Polymorphism allows
+improved code organization and readability as well as the creation
+of extensible programs that can be “grown” not only during the
+original creation of the project, but also when new features are
+desired.Encapsulation creates new data types by combining characteristics
+and behaviors. Access control separates the interface from the
+implementation by making the details private. But virtual functions deal
+with decoupling in terms of types.
+You saw how inheritance allows the treatment of an object as its own type or its
+base type. This ability is critical because it allows many types
+(derived from the same base type) to be treated as if they were one
+type, and a single piece of code to work on all those different types
+equally. The virtual function allows one type to express its
+distinction from another, similar type, as long as they’re both
+derived from the same base type. This distinction is expressed
+through differences in behavior of the functions that you can call
+through the base class.
+
+Q2: Function call binding
+Connecting a function call to a function body is called binding.
+When binding is performed before the program is run (by the
+compiler and linker), it’s called early binding. You may not have
+heard the term before because it’s never been an option with
+procedural languages: C compilers have only one kind of function
+call, and that’s early binding. Because of early binding the compiler 
+cannot know the correct function to call when it has only an Base class address.
+The solution is called late binding, which means the binding occurs
+at runtime, based on the type of the object. Late binding is also
+called dynamic binding or runtime binding. When a language
+implements late binding, there must be some mechanism to
+determine the type of the object at runtime and call the appropriate
+member function. In the case of a compiled language, the compiler
+still doesn’t know the actual object type, but it inserts code that
+finds out and calls the correct function body. The late-binding
+mechanism varies from language to language, but you can imagine
+that some sort of type information must be installed in the objects.
+
+Q3:Virtual Functions
+Virtual functions enhance the concept of type instead of just
+encapsulating code inside structures and behind walls, so they are
+without a doubt the most difficult concept for the new C++
+programmer to fathom. However, they’re also the turning point in
+the understanding of object-oriented programming. If you don’t
+use virtual functions, you don’t understand OOP yet.
+Because the virtual function is intimately bound with the concept of
+type, and type is at the core of object-oriented programming, there
+is no analog to the virtual function in a traditional procedural
+language. As a procedural programmer, you have no referent with
+which to think about virtual functions, as you do with almost every
+other feature in the language. Features in a procedural language
+can be understood on an algorithmic level, but virtual functions can
+be understood only from a design viewpoint.To cause late binding to occur for a particular function, C++
+requires that you use the virtual keyword when declaring the
+function in the base class. Late binding occurs only with virtual
+functions, and only when you’re using an address of the base class
+where those virtual functions exist, although they may also be
+defined in an earlier base class.To create a member function as virtual, you simply precede the
+declaration of the function with the keyword virtual. Only the
+declaration needs the virtual keyword, not the definition. If a
+function is declared as virtual in the base class, it is virtual in all the
+derived classes. The redefinition of a virtual function in a derived
+class is usually called overriding.Notice that you are only required to declare a function virtual in
+the base class. All derived-class functions that match the signature
+of the base-class declaration will be called using the virtual
+mechanism. You can use the virtual keyword in the derived-class
+declarations (it does no harm to do so), but it is redundant and can
+be confusing.
+
+Q4: Extensibility
+ In a well-designed OOP program, most or all of your
+functions will follow the model of tune(Base object )and communicate only
+with the base-class interface. Such a program is extensible because
+you can add new functionality by inheriting new data types from
+the common base class. The functions that manipulate the base-
+class interface will not need to be changed at all to accommodate
+the new classes.the virtual mechanism works correctly no matter how
+many levels there are.The compiler guarantees there’s always some definition 
+for a virtual function, so you’ll never end up with a call that doesn’t bind to a function body.
+(That would be disastrous.)upcasting is performed on each different type
+of object, yet the desired behavior always takes place. This can be
+described as “sending a message to an object and letting the object
+worry about what to do with it.” The virtual function is the lens to
+use when you’re trying to analyze a project: Where should the base
+classes occur, and how might you want to extend the program?
+However, even if you don’t discover the proper base class
+interfaces and virtual functions at the initial creation of the
+program, you’ll often discover them later, even much later, when
+you set out to extend or otherwise maintain the program. This is
+not an analysis or design error; it simply means you didn’t or
+couldn’t know all the information the first time. Because of the tight
+class modularization in C++, it isn’t a large problem when this
+occurs because changes you make in one part of a system tend not
+to propagate to other parts of the system as they do in C.
+
+Q5: How C++ implements late binding
+How can late binding happen? All the work goes on behind the
+scenes by the compiler, which installs the necessary late-binding
+mechanism when you ask it to (you ask by creating virtual
+functions).The keyword virtual tells the compiler it should not perform early
+binding. Instead, it should automatically install all the mechanisms
+necessary to perform late binding. This means that if you call
+play( ) for a Brass object through an address for the base-class
+Instrument, you’ll get the proper function.
+To accomplish this, the typical compiler 
+(Compilers may implement virtual behavior any way they want, but the way it’s
+described here is an almost universal approach.) creates a single table
+(called the VTABLE) for each class that contains virtual functions.
+The compiler places the addresses of the virtual functions for that
+particular class in the VTABLE. In each class with virtual functions,
+it secretly places a pointer, called the vpointer (abbreviated as
+VPTR), which points to the VTABLE for that object. When you
+make a virtual function call through a base-class pointer (that is,
+when you make a polymorphic call), the compiler quietly inserts
+code to fetch the VPTR and look up the function address in the
+VTABLE, thus calling the correct function and causing late binding
+to take place.All of this – setting up the VTABLE for each class, initializing the
+VPTR, inserting the code for the virtual function call – happens
+automatically, so you don’t have to worry about it. With virtual
+functions, the proper function gets called for an object, even if the
+compiler cannot know the specific type of the object.
+Each time you create a class that contains virtual functions, or you
+derive from a class that contains virtual functions, the compiler
+creates a unique VTABLE for that class.In that table it places the addresses of all the functions
+that are declared virtual in this class or in the base class. If you
+don’t override a function that was declared virtual in the base class,
+the compiler uses the address of the base-class version in the
+derived class.Then it places the VPTR into the class. 
+There is only one VPTR for each object when using simple inheritance. 
+The VPTR must be initialized to point to the starting address of the appropriate VTABLE. 
+(This happens in the constructor)Once the VPTR is initialized to the proper VTABLE, the object in
+effect “knows” what type it is. But this self-knowledge is worthless
+unless it is used at the point a virtual function is called.
+When you call a virtual function through a base class address (the
+situation when the compiler doesn’t have all the information
+necessary to perform early binding), something special happens.
+Instead of performing a typical function call, which is simply an
+assembly-language CALL to a particular address, the compiler
+generates different code to perform the function call.
+All the VTABLE function addresses are laid out in the
+same order, regardless of the specific type of the object.
+The compiler knows that regardless of the specific object type, the adjust( )function is at
+the location VPTR+2. Thus, instead of saying, “Call the function at
+the absolute location Instrument::adjust  ” (early binding; the wrong action), 
+it generates code that says, in effect, “Call the function at
+VPTR+2.” Because the fetching of the VPTR and the determination
+of the actual function address occur at runtime, you get the desired
+late binding. You send a message to the object, and the object
+figures out what to do with it.
+
+Q6: Installing the vpointer
+Because the VPTR determines the virtual function behavior of the
+object, you can see how it’s critical that the VPTR always be
+pointing to the proper VTABLE. You don’t ever want to be able to
+make a call to a virtual function before the VPTR is properly
+initialized. Of course, the place where initialization can be
+guaranteed is in the constructo.This is where creation of the default constructor is essential. 
+
+Q7:Late binding only used during upcasting
+It’s important to realize that upcasting deals only with addresses. If
+the compiler has an object, it knows the exact type and therefore (in
+C++) will not use late binding for any function calls – or at least, the
+compiler doesn’t need to use late binding. For efficiency’s sake,
+most compilers will perform early binding when they are making a
+call to a virtual function for an object because they know the exact
+type.However, if the compiler doesn’t want to work so hard, it can still use late binding and the same
+behavior will occur.
+
+Q8: Why virtual functions
+At this point you may have a question: “If this technique is so
+important, and if it makes the ‘right’ function call all the time, why
+is it an option? Why do I even need to know about it?”
+This is a good question, and the answer is part of the fundamental
+philosophy of C++: “Because it’s not quite as efficient.” You can see
+from the previous assembly-language output that instead of one
+simple CALL to an absolute address, there are two – more
+sophisticated – assembly instructions required to set up the virtual
+function call. This requires both code space and execution time.
+Some object-oriented languages have taken the approach that late
+binding is so intrinsic to object-oriented programming that it
+should always take place, that it should not be an option, and the
+user shouldn’t have to know about it. This is a design decision
+when creating a language, and that particular path is appropriate
+for many languages.However, C++ comes from the C heritage,
+where efficiency is critical. After all, C was created to replace
+assembly language for the implementation of an operating system
+(thereby rendering that operating system – Unix – far more
+portable than its predecessors). One of the main reasons for the
+invention of C++ was to make C programmers more efficient.
+And the first question asked when C programmers encounter C++ is,
+“What kind of size and speed impact will I get?” If the answer
+were, “Everything’s great except for function calls when you’ll
+always have a little extra overhead,” many people would stick with
+C rather than make the change to C++. In addition, inline functions
+would not be possible, because virtual functions must have an
+address to put into the VTABLE. So the virtual function is an
+option, and the language defaults to nonvirtual, which is the fastest
+configuration. Stroustrup stated that his guideline was, “If you
+don’t use it, you don’t pay for it.”Thus, the virtual keyword is provided for efficiency tuning. 
+When designing your classes, however, you shouldn’t be worrying about
+efficiency tuning. If you’re going to use polymorphism, use virtual
+functions everywhere. You only need to look for functions that can
+be made non-virtual when searching for ways to speed up your
+code (and there are usually much bigger gains to be had in other
+areas – a good profiler will do a better job of finding bottlenecks
+than you will by making guesses).Anecdotal evidence suggests that the size and speed impacts of
+going to C++ are within 10 percent of the size and speed of C, and
+often much closer to the same. The reason you might get better size
+and speed efficiency is because you may design a C++ program in a
+smaller, faster way than you would using C.
+
+Q9: Abstract base classes and pure virtual functions
+Often in a design, you want the base class to present only an
+interface for its derived classes. That is, you don’t want anyone to
+actually create an object of the base class, only to upcast to it so that
+its interface can be used. This is accomplished by making that class
+abstract, which happens if you give it at least one pure virtual
+function. You can recognize a pure virtual function because it uses
+the virtual keyword and is followed by = 0. If anyone tries to make
+an object of an abstract class, the compiler prevents them. This is a
+tool that allows you to enforce a particular design.
+When an abstract class is inherited, all pure virtual functions must
+be implemented, or the inherited class becomes abstract as well.
+Creating a pure virtual function allows you to put a member
+function in an interface without being forced to provide a possibly
+meaningless body of code for that member function. At the same
+time, a pure virtual function forces inherited classes to provide a
+definition for it.The only reason to establish the common interface is so it can be
+expressed differently for each different subtype. It creates a basic
+form that determines what’s in common with all of the derived
+classes – nothing else. You create an abstract class when you only
+want to manipulate a set of classes through a common interface,
+but the common interface doesn’t need to have an implementation
+(or at least, a full implementation).
+Here is the syntax used for a pure virtual declaration:
+virtual void f() = 0;
+By doing this, you tell the compiler to reserve a slot for a function
+in the VTABLE, but not to put an address in that particular slot.
+Even if only one function in a class is declared as pure virtual, the
+VTABLE is incomplete.If the VTABLE for a class is incomplete, what is the compiler
+supposed to do when someone tries to make an object of that class?
+It cannot safely create an object of an abstract class, so you get an
+error message from the compiler. Thus, the compiler guarantees the
+purity of the abstract class. By making a class abstract, you ensure
+that the client programmer cannot misuse it.Pure virtual functions are helpful because they make explicit the
+abstractness of a class and tell both the user and the compiler how
+it was intended to be used.Note that pure virtual functions prevent an abstract class from
+being passed into a function by value.Thus, it is also a way to
+prevent object slicing (which will be described shortly). By making a
+class abstract, you can ensure that a pointer or reference is always
+used during upcasting to that class.Just because one pure virtual function prevents the VTABLE from
+being completed doesn’t mean that you don’t want function bodies
+for some of the others. Often you will want to call a base-class
+version of a function, even if it is virtual. It’s always a good idea to
+put common code as close as possible to the root of your hierarchy.
+Not only does this save code space, it allows easy propagation of
+changes.
+
+Q10: Pure virtual definitions
+It’s possible to provide a definition for a pure virtual function in the
+base class. You’re still telling the compiler not to allow objects of
+that abstract base class, and the pure virtual functions must still be
+defined in derived classes in order to create objects. However, there
+may be a common piece of code that you want some or all of the
+derived class definitions to call rather than duplicating that code in
+every function.The slot in the Base class VTABLE is still empty, but there happens to be a
+function by that name that you can call in the derived class.
+The other benefit to this feature is that it allows you to change from
+an ordinary virtual to a pure virtual without disturbing the existing
+code. (This is a way for you to locate classes that don’t override that
+virtual function.)
+
+Q11: Inheritance and VTABLE
+You can imagine what happens when you perform inheritance and
+override some of the virtual functions. The compiler creates a new
+VTABLE for your new class, and it inserts your new function
+addresses using the base-class function addresses for any virtual
+functions you don’t override. One way or another, for every object
+that can be created (that is, its class has no pure virtuals) there’s
+always a full set of function addresses in the VTABLE, so you’ll
+never be able to make a call to an address that isn’t there (which
+would be disastrous).But what happens when you inherit and add new virtual functions
+in the derived class? )The compiler generates code that uses a simple
+numerical offset into the VTABLE to select the virtual function.
+Regardless of the specific subtype the object belongs to, its VTABLE
+is laid out the same way, so calls to the virtual functions will
+always be made the same way.If compiler has only a pointer to a base-class object?
+That pointer might point to some other type, which doesn’t have a
+new added ( ) function. It may or may not have some other function address
+at that point in the VTABLE, but in either case, making a virtual call
+to that VTABLE address is not what you want to do. So the
+compiler is doing its job by protecting you from making virtual
+calls to functions that exist only in derived classes.
+There are some less-common cases in which you may know that the
+pointer actually points to an object of a specific subclass. If you
+want to call a function that only exists in that subclass, then you
+must cast the pointer. If your problem is set up so that you
+must know the exact types of all objects, you should rethink it,
+because you’re probably not using virtual functions properly.
+However, there are some situations in which the design works best
+(or you have no choice) if you know the exact type of all objects
+kept in a generic container. This is the problem of run-time type
+identification (RTTI).RTTI is all about casting base-class pointers down to derived-class
+pointers (“up” and “down” are relative to a typical class diagram,
+with the base class at the top). Casting up happens automatically,
+with no coercion, because it’s completely safe. Casting down is
+unsafe because there’s no compile time information about the
+actual types, so you must know exactly what type the object is. If
+you cast it into the wrong type, you’ll be in trouble.
+
+Q12: Object slicing
+There is a distinct difference between passing the addresses of
+objects and passing objects by value when using polymorphism.
+Virtually all the examples you should see, pass addresses and not values. This is because
+addresses all have the same size5, so passing the address of an
+object of a derived type (which is usually a bigger object) is the
+same as passing the address of an object of the base type (which is
+usually a smaller object). As explained before, this is the goal when
+using polymorphism – code that manipulates a base type can
+transparently manipulate derived-type objects as well.
+If you upcast to an object instead of a pointer or reference,
+something will happen that may surprise you: the object is “sliced”
+until all that remains is the subobject that corresponds to the
+destination type of your cast.Object slicing actually removes part of the existing object as it
+copies it into the new object, rather than simply changing the
+meaning of an address as when using a pointer or reference.
+Because of this, upcasting into an object is not done often; in fact,
+it’s usually something to watch out for and prevent.Most important value of
+pure virtual functions: to prevent object slicing by generating a
+compile-time error message if someone tries to do it.
+ 
+Q13: Overloading and overriding (Virtual Functions)
+You saw that redefining an overloaded function in
+the base class hides all of the other base-class versions of that
+function. When virtual functions are involved the behavior is a
+little different.
+Compiler will not allow you to change the return type of an overridden function (it
+will allow it if f( ) is not virtual). This is an important restriction
+because the compiler must guarantee that you can polymorphically
+call the function through the base class, and if the base class is
+expecting an int to be returned from f( ), then the derived-class
+version of f( ) must keep that contract or else things will break.
+if you override one of the overloaded member functions in the base class, the other
+overloaded versions become hidden in the derived class. 
+
+Q14: Variant return type
+You cannot modify the return type of a virtual function during overriding. This is
+generally true, but there is a special case in which you can slightly
+modify the return type. If you’re returning a pointer or a reference
+to a base class, then the overridden version of the function may
+return a pointer or reference to a class derived from what the base
+returns. 
+
+Q15: Virtual functions and constructors
+When an object containing virtual functions is created, its VPTR
+must be initialized to point to the proper VTABLE. This must be
+done before there’s any possibility of calling a virtual function. As
+you might guess, because the constructor has the job of bringing an
+object into existence, it is also the constructor’s job to set up the
+VPTR. The compiler secretly inserts code into the beginning of the
+constructor that initializes the VPTR.if you don’t explicitly create a constructor for a class, the
+compiler will synthesize one for you. If the class has virtual
+functions, the synthesized constructor will include the proper
+VPTR initialization code. This has several implications.
+
+1: The first concerns efficiency. The reason for inline functions is to
+reduce the calling overhead for small functions. If C++ didn’t
+provide inline functions, the preprocessor might be used to create
+these “macros.” However, the preprocessor has no concept of
+access or classes, and therefore couldn’t be used to create member
+function macros. In addition, with constructors that must have
+hidden code inserted by the compiler, a preprocessor macro
+wouldn’t work at all.You must be aware when hunting for efficiency holes that the
+compiler is inserting hidden code into your constructor function.
+Not only must it initialize the VPTR, it must also check the value of
+this (in case the operator new returns zero) and call base-class
+constructors. Taken together, this code can impact what you
+thought was a tiny inline function call. In particular, the size of the
+constructor may overwhelm the savings you get from reduced
+function-call overhead. If you make a lot of inline constructor calls,
+your code size can grow without any benefits in speed.
+Of course, you probably won’t make all tiny constructors non-
+inline right away, because they’re much easier to write as inlines.
+But when you’re tuning your code, remember to consider removing
+the inline constructors.
+
+2:The second interesting facet of constructors and virtual functions
+concerns the order of constructor calls and the way virtual calls are
+made within constructors.All base-class constructors are always called in the constructor for
+an inherited class. This makes sense because the constructor has a
+special job: to see that the object is built properly. A derived class
+has access only to its own members, and not those of the base class.
+Only the base-class constructor can properly initialize its own
+elements. Therefore it’s essential that all constructors get called;
+otherwise the entire object wouldn’t be constructed properly. 
+That’s why the compiler enforces a constructor call for every portion of a
+derived class. It will call the default constructor if you don’t
+explicitly call a base-class constructor in the constructor initializer
+list. If there is no default constructor, the compiler will complain.
+The order of the constructor calls is important. When you inherit,
+you know all about the base class and can access any public and
+protectedmembers of the base class. This means you must be able
+to assume that all the members of the base class are valid when
+you’re in the derived class. In a normal member function,
+construction has already taken place, so all the members of all parts
+of the object have been built. Inside the constructor, however, you
+must be able to assume that all members that you use have been
+built. The only way to guarantee this is for the base-class
+constructor to be called first. Then when you’re in the derived-class
+constructor, all the members you can access in the base class have
+been initialized. “Knowing all members are valid” inside the
+constructor is also the reason that, whenever possible, you should
+initialize all member objects (that is, objects placed in the class
+using composition) in the constructor initializer list. If you follow
+this practice, you can assume that all base class members and
+member objects of the current object have been initialized.
+
+Q16: Behavior of virtual functions inside constructors
+The hierarchy of constructor calls brings up an interesting
+dilemma. What happens if you’re inside a constructor and you call
+a virtual function? Inside an ordinary member function you can
+imagine what will happen – the virtual call is resolved at runtime
+because the object cannot know whether it belongs to the class the
+member function is in, or some class derived from it. For
+consistency, you might think this is what should happen inside
+constructors.This is not the case. If you call a virtual function inside a
+constructor, only the local version of the function is used. That is,
+the virtual mechanism doesn’t work within the constructor.
+This behavior makes sense for two reasons. Conceptually, the
+constructor’s job is to bring the object into existence (which is
+hardly an ordinary feat). Inside any constructor, the object may
+only be partially formed – you can only know that the base-class
+objects have been initialized, but you cannot know which classes
+are inherited from you. A virtual function call, however, reaches
+“forward” or “outward” into the inheritance hierarchy. It calls a
+function in a derived class. If you could do this inside a constructor,
+you’d be calling a function that might manipulate members that
+hadn’t been initialized yet, a sure recipe for disaster.
+The second reason is a mechanical one. When a constructor is
+called, one of the first things it does is initialize its VPTR. However,
+it can only know that it is of the “current” type – the type the
+constructor was written for. The constructor code is completely
+ignorant of whether or not the object is in the base of another class.
+When the compiler generates code for that constructor, it generates
+code for a constructor of that class, not a base class and not a class
+derived from it (because a class can’t know who inherits it). So the
+VPTR it uses must be for the VTABLE of that class. The VPTR
+remains initialized to that VTABLE for the rest of the object’s
+lifetime unless this isn’t the last constructor call. If a more-derived
+constructor is called afterwards, that constructor sets the VPTR to
+its VTABLE, and so on, until the last constructor finishes. The state
+of the VPTR is determined by the constructor that is called last.
+This is another reason why the constructors are called in order from
+base to most-derived.But while all this series of constructor calls is taking place, each
+constructor has set the VPTR to its own VTABLE. If it uses the
+virtual mechanism for function calls, it will produce only a call
+through its own VTABLE, not the most-derived VTABLE (as would
+be the case after all the constructors were called). 
+In addition, many compilers recognize that a virtual function call is being made inside
+a constructor, and perform early binding because they know that
+late-binding will produce a call only to the local function. In either
+event, you won’t get the results you might initially expect from a
+virtual function call inside a constructor.
+
+Q17: Destructors and virtual destructors
+You cannot use the virtual keyword with constructors, but
+destructors can and often must be virtual.
+The constructor has the special job of putting an object together
+piece-by-piece, first by calling the base constructor, then the more
+derived constructors in order of inheritance (it must also call
+member-object constructors along the way). Similarly, the
+destructor has a special job: it must disassemble an object that may
+belong to a hierarchy of classes. To do this, the compiler generates
+code that calls all the destructors, but in the reverse order that they
+are called by the constructor. That is, the destructor starts at the
+most-derived class and works its way down to the base class. This
+is the safe and desirable thing to do because the current destructor
+can always know that the base-class members are alive and active.
+If you need to call a base-class member function inside your
+destructor, it is safe to do so. Thus, the destructor can perform its
+own cleanup, then call the next-down destructor, which will
+perform its own cleanup, etc. Each destructor knows what its class
+is derived from, but not what is derived from it.
+You should keep in mind that constructors and destructors are the
+only places where this hierarchy of calls must happen (and thus the
+proper hierarchy is automatically generated by the compiler). In all
+other functions, only that function will be called (and not base-class
+versions), whether it’s virtual or not. The only way for base-class
+versions of the same function to be called in ordinary functions
+(virtual or not) is if you explicitly call that function.
+Normally, the action of the destructor is quite adequate. But what
+happens if you want to manipulate an object through a pointer to
+its base class (that is, manipulate the object through its generic
+interface)? This activity is a major objective in object-oriented
+programming. The problem occurs when you want to delete a
+pointer of this type for an object that has been created on the heap
+with new. If the pointer is to the base class, the compiler can only
+know to call the base-class version of the destructor during delete.
+Sound familiar? This is the same problem that virtual functions
+were created to solve for the general case. Fortunately, virtual
+functions work for destructors as they do for all other functions
+except constructors.Forgetting to make a destructor virtual is an
+insidious bug because it often doesn’t directly affect the behavior of
+your program, but it can quietly introduce a memory leak. Also, the
+fact that some destruction is occurring can further mask the
+problem.Even though the destructor, like the constructor, is an
+“exceptional” function, it is possible for the destructor to be virtual
+because the object already knows what type it is (whereas it doesn’t
+during construction). Once an object has been constructed, its
+VPTR is initialized, so virtual function calls can take place.
+
+Q18: Pure virtual destructors
+While pure virtual destructors are legal in Standard C++, there is
+an added constraint when using them: you must provide a function
+body for the pure virtual destructor. This seems counterintuitive;
+how can a virtual function be “pure” if it needs a function body?
+But if you keep in mind that constructors and destructors are
+special operations it makes more sense, especially if you remember
+that all destructors in a class hierarchy are always called. If you
+could leave off the definition for a pure virtual destructor, what
+function body would be called during destruction? Thus, it’s
+absolutely necessary that the compiler and linker enforce the
+existence of a function body for a pure virtual destructor.
+If it’s pure, but it has to have a function body, what’s the value of
+it? The only difference you’ll see between the pure and non-pure
+virtual destructor is that the pure virtual destructor does cause the
+base class to be abstract, so you cannot create an object of the base
+class (although this would also be true if any other member
+function of the base class were pure virtual).
+Things are a bit confusing, however, when you inherit a class from
+one that contains a pure virtual destructor. Unlike every other pure
+virtual function, you are not required to provide a definition of a
+pure virtual destructor in the derived class.
+Normally, a pure virtual function in a base class would cause the
+derived class to be abstract unless it (and all other pure virtual
+functions) is given a definition. However, remember that the compiler automatically creates a
+destructor definition for every class if you don’t create one. 
+What is the point of a pure virtual destructor? Unlike an ordinary pure virtual function, you
+must give it a function body. In a derived class, you aren’t forced to
+provide a definition since the compiler synthesizes the destructor
+for you. So what’s the difference between a regular virtual
+destructor and a pure virtual destructor?The only distinction occurs when you have a class that only has a
+single pure virtual function: the destructor. In this case, the only
+effect of the purity of the destructor is to prevent the instantiation
+of the base class. If there were any other pure virtual functions,
+they would prevent the instantiation of the base class, but if there
+are no others, then the pure virtual destructor will do it. So, while
+the addition of a virtual destructor is essential, whether it’s pure or
+not isn’t so important.As a guideline, any time you have a virtual function in a class, you
+should immediately add a virtual destructor (even if it does
+nothing). This way, you ensure against any surprises later.
+
+Q19: Virtuals in destructors
+There’s something that happens during destruction that you might
+not immediately expect. If you’re inside an ordinary member
+function and you call a virtual function, that function is called
+using the late-binding mechanism. This is not true with destructors,
+virtual or not. Inside a destructor, only the “local” version of the
+member function is called; the virtual mechanism is ignored.
+Why is this? Suppose the virtual mechanism were used inside the
+destructor. Then it would be possible for the virtual call to resolve
+to a function that was “farther out” (more derived) on the
+inheritance hierarchy than the current destructor. But destructors
+are called from the “outside in” (from the most-derived destructor
+down to the base destructor), so the actual function called would
+rely on portions of an object that have already been destroyed!
+Instead, the compiler resolves the calls at compile-time and calls
+only the “local” version of the function. Notice that the same is true
+for the constructor (as described earlier), but in the constructor’s
+case the type information wasn’t available, whereas in the
+destructor the information (that is, the VPTR) is there, but is isn’t
+reliable.
+
+Q20: Singly-rooted heirarchy
+The problem is that you want the container to hold more than one
+type, but you don’t want to use void pointers. Another solution is
+to use polymorphism by forcing all the objects held in the container
+to be inherited from the same base class. That is, the container
+holds the objects of the base class, and then you can call virtual
+functions – in particular, you can call virtual destructors to solve
+the ownership problem.
+This solution uses what is referred to as a singly-rooted hierarchy or
+an object-based hierarchy (because the root class of the hierarchy is
+usually named “Object”). It turns out that there are many other
+benefits to using a singly-rooted hierarchy; in fact, every other
+object-oriented language but C++ enforces the use of such a
+hierarchy – when you create a class, you are automatically
+inheriting it directly or indirectly from a common base class, a base
+class that was established by the creators of the language. In C++, it
+was thought that the enforced use of this common base class would
+cause too much overhead, so it was left out. However, you can
+choose to use a common base class in your own projects.
+
+Q21: Operator overloading and polymorphism
+You can make operators virtualjust like other member functions.
+Implementing virtual operators often becomes confusing, however,
+because you may be operating on two objects, both with unknown
+types. This is usually the case with mathematical components (for
+which you often overload operators).
+
+Q22: Multiple dispatching
+A virtual function is only capable of making a single dispatch
+– that is, determining the type of one unknown object. To
+determine both types a technique called multiple dispatching is used
+in this example, whereby what appears to be a single virtual
+function call results in a second virtual call. By the time this second
+call is made, you’ve determined both types of object, and can
+perform the proper activity.
+
+Q23: Downcasting
+As you might guess, since there’s such a thing as upcasting –
+moving up an inheritance hierarchy – there should also be
+downcasting to move down a hierarchy. But upcasting is easy since
+as you move up an inheritance hierarchy the classes always
+converge to more general classes. That is, when you upcast you are
+always clearly derived from an ancestor class (typically only one,
+except in the case of multiple inheritance) but when you downcast
+there are usually several possibilities that you could cast to. 
+So the dilemma is figuring out a way to safely downcast. (But
+an even more important issue is asking yourself why you’re
+downcasting in the first place instead of just using polymorphism
+to automatically figure out the correct type. 
+C++ provides a special explicit cast called dynamic_cast that is a type-safe downcast operation. 
+When you use dynamic_cast to try to cast down to a particular type, the return
+value will be a pointer to the desired type only if the cast is proper
+and successful, otherwise it will return zero to indicate that this
+was not the correct type.
+When you use dynamic_cast , you must be working with a true
+polymorphic hierarchy – one with virtual functions – because
+dynamic_cast uses information stored in the VTABLE to determine
+the actual type. 
+Of course, whenever you downcast you are responsible for checking to
+make sure that the result of the cast is nonzero. Also, you should
+not assume that the pointer will be exactly the same, because
+sometimes pointer adjustments take place during upcasting and
+downcasting (in particular, with multiple inheritance).
+A dynamic_cast requires a little bit of extra overhead to run; not
+much, but if you’re doing a lot of dynamic_cast ing 
+(in which case you should be seriously questioning your program design) this
+may become a performance issue. In some cases you may know
+something special during downcasting that allows you to say for
+sure what type you’re dealing with, in which case the extra
+overhead of the dynamic_cast becomes unnecessary, and you can
+use a static_cast instead.
+
+
+
+
+
+
+ 
+
+
+
+
+
+
