@@ -1,0 +1,329 @@
+Inheritance and Composition
+==============================
+
+Q1: C++ inheritance and composition
+As with most everything in C++, the solution revolves around the class.
+You reuse code by creating new classes, but instead of creating
+them from scratch, you use existing classes that someone else has
+built and debugged.
+The trick is to use the classes without soiling the existing code.The first is
+quite straightforward: You simply create objects of your existing
+class inside the new class. This is called composition because the new
+class is composed of objects of existing classes.
+The second approach is subtler. You create a new class as a type of
+an existing class. You literally take the form of the existing class
+and add code to it, without modifying the existing class. This
+magical act is called inheritance, and most of the work is done by the
+compiler. Inheritance is one of the cornerstones of object-oriented
+programming.
+
+Q2:Constructor Initializer list
+You’ve seen how important it is in C++ to guarantee proper
+initialization, and it’s no different during composition and
+inheritance. When an object is created, the compiler guarantees that
+constructors for all of its subobjects are called. But what happens if your
+subobjects don’t have default constructors, or if you want to change
+a default argument in a constructor? This is a problem because the
+new class constructor doesn’t have permission to access the private
+data elements of the subobject, so it can’t initialize them directly.
+The solution is simple: Call the constructor for the subobject. C++
+provides a special syntax for this, the constructor initializer list. The
+form of the constructor initializer list echoes the act of inheritance.
+With inheritance, you put the base classes after a colon and before
+the opening brace of the class body. Note that while you can see the 
+type of the base class in the constructor initializer list, you only see the member object identifier.
+
+Q3: BUilt-in types in the initializer list
+The constructor initializer list allows you to explicitly call the
+constructors for member objects. In fact, there’s no other way to call
+those constructors. The idea is that the constructors are all called
+before you get into the body of the new class’s constructor. That
+way, any calls you make to member functions of subobjects will
+always go to initialized objects. There’s no way to get to the
+opening brace of the constructor without some constructor being
+called for all the member objects and base-class objects, even if the
+compiler must make a hidden call to a default constructor. This is a
+further enforcement of the C++ guarantee that no object (or part of
+an object) can get out of the starting gate without its constructor
+being called.This idea that all of the member objects are initialized by the time
+the opening brace of the constructor is reached is a convenient
+programming aid as well.Once you hit the opening brace, you can
+assume all subobjects are properly initialized and focus on specific
+tasks you want to accomplish in the constructor. However, there’s a
+hitch: What about member objects of built-in types, which don’t
+have constructors?To make the syntax consistent, you are allowed to treat built-in
+types as if they have a single constructor, which takes a single
+argument: a variable of the same type as the variable you’re
+initializing.The action of these “pseudo-constructor calls” is to perform a
+simple assignment. It’s a convenient technique and a good coding
+style, so you’ll see it used often.This makes built-in types act a little bit more like objects.
+Remember, though, that these are not real constructors. In
+particular, if you don’t explicitly make a pseudo-constructor call,
+no initialization is performed.
+
+Q4: Simple difference between inheritance and composition
+Notice that the only time you can talk about redefinition of functions is during
+inheritance; with a member object you can only manipulate the
+public interface of the object, not redefine it.
+
+Q5: Automatic destructor calls
+Although you are often required to make explicit constructor calls
+in the initializer list, you never need to make explicit destructor
+calls because there’s only one destructor for any class, and it
+doesn’t take any arguments. However, the compiler still ensures
+that all destructors are called, and that means all of the destructors
+in the entire hierarchy, starting with the most-derived destructor
+and working back to the root.It’s worth emphasizing that constructors and destructors are quite
+unusual in that every one in the hierarchy is called, whereas with a
+normal member function only that function is called, but not any of
+the base-class versions. If you also want to call the base-class
+version of a normal member function that you’re overriding, you
+must do it explicitly.
+
+Q6: Order of constructor and destructor calls
+It’s interesting to know the order of constructor and destructor calls
+when an object has many subobjects.
+You can see that construction starts at the very root of the class
+hierarchy, and that at each level the base class constructor is called
+first, followed by the member object constructors. The destructors
+are called in exactly the reverse order of the constructors – this is
+important because of potential dependencies (in the derived-class
+constructor or destructor, you must be able to assume that the base-
+class subobject is still available for use, and has already been
+constructed – or not destroyed yet).
+It’s also interesting that the order of constructor calls for member
+objects is completely unaffected by the order of the calls in the
+constructor initializer list. The order is determined by the order that
+the member objects are declared in the class. If you could change
+the order of constructor calls via the constructor initializer list, you
+could have two different call sequences in two different
+constructors, but the poor destructor wouldn’t know how to
+properly reverse the order of the calls for destruction, and you
+could end up with a dependency problem.
+
+Q7: Name hiding
+If you inherit a class and provide a new definition for one of its
+member functions, there are two possibilities. The first is that you
+provide the exact signature and return type in the derived class
+definition as in the base class definition. This is called redefining for
+ordinary member functions and overriding when the base class
+member function is a virtual function. In general, we
+can say that anytime you redefine an overloaded function name
+from the base class, all the other versions are automatically hidden
+in the new class.
+
+Q8: Some minor things to remember with inheritance
+If you change the interface of the base class by modifying the
+signature and/or return type of a member function from the base
+class, then you’re using the class in a different way than inheritance
+is normally intended to support. It doesn’t necessarily mean you’re
+doing it wrong, it’s just that the ultimate goal of inheritance is to
+support polymorphism, and if you change the function signature or
+return type then you are actually changing the interface of the base
+class. If this is what you have intended to do then you are using
+inheritance primarily to reuse code, and not to maintain the
+common interface of the base class (which is an essential aspect of
+polymorphism). In general, when you use inheritance this way it
+means you’re taking a general-purpose class and specializing it for
+a particular need – which is usually, but not always, considered the
+realm of composition.
+
+Q9: Functions that don’t automatically inherit
+Not all functions are automatically inherited from the base class
+into the derived class. Constructors and destructors deal with the
+creation and destruction of an object, and they can know what to
+do with the aspects of the object only for their particular class, so all
+the constructors and destructors in the hierarchy below them must
+be called. Thus, constructors and destructors don’t inherit and must
+be created specially for each derived class.
+In addition, the operator=doesn’t inherit because it performs a
+constructor-like activity. That is, just because you know how to
+assign all the members of an object on the left-hand side of the =
+from an object on the right-hand side doesn’t mean that assignment
+will still have the same meaning after inheritance.
+As soon as you decide to write your own copy-constructor and assignment operator, the compiler assumes
+that you know what you’re doing and does not automatically call
+the base-class versions, as it does in the synthesized functions. If
+you want the base class versions called (and you typically do) then
+you must explicitly call them yourself. 
+
+Q10: Inheritance and static member functions
+Static member functions act the same as non-static member
+functions:
+1.They inherit into the derived class.
+2.If you redefine a static member, all the other overloaded
+functions in the base class are hidden.
+3.If you change the signature of a function in the base class, all
+the base class versions with that function name are hidden
+(this is really a variation of the previous point).
+However, static member functions cannot be virtual
+
+Q11: Choosing Inheritance vs Composition
+Both composition and inheritance place subobjects inside your new
+class. Both use the constructor initializer list to construct these
+subobjects. You may now be wondering what the difference is
+between the two, and when to choose one over the other.
+Composition is generally used when you want the features of an
+existing class inside your new class, but not its interface. That is,
+you embed an object to implement features of your new class, but
+the user of your new class sees the interface you’ve defined rather
+than the interface from the original class.To do this, you follow the
+typical path of embedding private objects of existing classes inside
+your new class.Occasionally, however, it makes sense to allow the class user to
+directly access the composition of your new class, that is, to make
+the member objects public. The member objects use access control
+themselves, so this is a safe thing to do and when the user knows
+you’re assembling a bunch of parts, it makes the interface easier to
+understand.
+But what if you want everything in the class to come through? This
+is called subtyping because you’re making a new type from an
+existing type, and you want your new type to have exactly the
+same interface as the existing type (plus any other member
+functions you want to add), so you can use it everywhere you’d use
+the existing type. This is where inheritance is essential.
+One of the clearest ways to determine whether you should be using
+composition or inheritance is by asking whether you’ll ever need to
+upcast from your new class.One place it becomes important,
+however, is when multiple inheritance might be warranted. In that
+case, if you see a design in which composition can be used instead
+of inheritance, you may be able to eliminate the need for multiple
+inheritance.
+ 
+
+Q12: Private inheritance
+You can inherit a base class privately by leaving off the public in
+the base-class list, or by explicitly saying private (probably a better
+policy because it is clear to the user that you mean it). When you
+inherit privately, you’re “implementing in terms of;” that is, you’re
+creating a new class that has all of the data and functionality of the
+base class, but that functionality is hidden, so it’s only part of the
+underlying implementation. The class user has no access to the
+underlying functionality, and an object cannot be treated as a
+instance of the base class.You may wonder what the purpose of private inheritance is,
+because the alternative of using composition to create a private
+object in the new class seems more appropriate.private inheritance
+is included in the language for completeness, but if for no other
+reason than to reduce confusion, you’ll usually want to use
+composition rather than private inheritance. However, there may
+occasionally be situations where you want to produce part of the
+same interface as the base class and disallow the treatment of the
+object as if it were a base-class object. private inheritance provides
+this ability.
+
+Q13: Publicizing privately inherited members
+Publicizing privately inherited members
+When you inherit privately, all the public members of the base
+class become private. If you want any of them to be visible, just say
+their names (no arguments or return values) in the public section of
+the derived class.Thus, private inheritance is useful if you want to hide part of the
+functionality of the base class.Notice that giving the name of an overloaded function exposes all
+the versions of the overloaded function in the base class.
+You should think carefully before using private inheritance instead
+of composition; private inheritance has particular complications
+when combined with runtime type identification 
+
+Q14: Protected key words
+In an ideal world, private members would always be hard-and-fast private, 
+but in real projects there are times when you want to make something hidden from the
+world at large and yet allow access for members of derived classes.
+The protectedkeyword is a nod to pragmatism; it says, “This is
+private as far as the class user is concerned, but available to anyone
+who inherits from this class.” The best approach is to leave the data members private – you
+should always preserve your right to change the underlying
+implementation. You can then allow controlled access to inheritors
+of your class through protected member functions.
+
+Q15: Protected inheritance
+When you’re inheriting, the base class defaults to private, which
+means that all of the public member functions are private to the
+user of the new class. Normally, you’ll make the inheritance public
+so the interface of the base class is also the interface of the derived
+class. However, you can also use the protectedkeyword during
+inheritance.Protected derivation means “implemented-in-terms-of” to other
+classes but “is-a” for derived classes and friends. It’s something
+you don’t use very often, but it’s in the language for completeness.
+ 
+Q16:Operator overloading & inheritance
+Except for the assignment operator, operators are automatically
+inherited into a derived class.
+
+Q17: Multiple Inheritance
+You can inherit from one class, so it would seem to make sense to
+inherit from more than one class at a time.One thing is generally agreed upon: You shouldn’t try this
+until you’ve been programming quite a while and understand the
+language thoroughly. By that time, you’ll probably realize that no
+matter how much you think you absolutely must use multiple
+inheritance, you can almost always get away with single
+inheritance.Initially, multiple inheritance seems simple enough: You add more
+classes in the base-class list during inheritance, separated by
+commas. However, multiple inheritance introduces a number of
+possibilities for ambiguity
+
+Q18: Incremental development using composition and inheritance
+One of the advantages of inheritance and composition is that these
+support incremental development by allowing you to introduce new
+code without causing bugs in existing code. If bugs do appear, they
+are isolated within the new code.By inheriting from (or composing
+with) an existing, functional class and adding data members and
+member functions (and redefining existing member functions 
+during inheritance) you leave the existing code – that someone else
+may still be using – untouched and unbugged. If a bug happens,
+you know it’s in your new code, which is much shorter and easier
+to read than if you had modified the body of existing code.
+It’s rather amazing how cleanly the classes are separated. You don’t
+even need the source code for the member functions in order to
+reuse the code, just the header file describing the class and the
+object file or library file with the compiled member functions. (This
+is true for both inheritance and composition.)
+It’s important to realize that program development is an
+incremental process, just like human learning. You can do as much
+analysis as you want, but you still won’t know all the answers
+when you set out on a project. You’ll have much more success –
+and more immediate feedback – if you start out to “grow” your
+project as an organic, evolutionary creature, rather than
+constructing it all at once like a glass-box skyscraper.
+Although inheritance for experimentation is a useful technique, at
+some point after things stabilize you need to take a new look at
+your class hierarchy with an eye to collapsing it into a sensible
+structure . Remember that underneath it all, inheritance is meant to
+express a relationship that says, “This new class is a type of that old
+class.” Your program should not be concerned with pushing bits
+around, but instead with creating and manipulating objects of
+various types to express a model in the terms given you from the
+problem space.
+
+Q19: Upcasting
+Casting from derived to base moves up on the inheritance diagram,
+so it’s commonly referred to as upcasting. Upcasting is always safe
+because you’re going from a more specific type to a more general
+type – the only thing that can occur to the class interface is that it
+can lose member functions, not gain them. This is why the compiler
+allows upcasting without any explicit casts or other special
+notation. Upcasting can also occur during a simple assignment to a pointer or reference.
+
+Q20: Type information lost during upcasting
+Of course, any upcast loses type information about an object. If you say
+Wind w;
+Instrument* ip = &w;
+the compiler can deal with ip only as an Instrument pointer and
+nothing else. That is, it cannot know that ip actually happens to
+point to a Wind object. So when you call the play( ) member
+function by saying
+ip->play(middleC);
+the compiler can know only that it’s calling play( ) for an
+Instrumentpointer, and call the base-class version of
+Instrument::play( )
+ instead of what it should do, which is call
+Wind::play( ) .
+Thus, you won’t get the correct behavior.This is a significant problem; it is solved  by
+introducing the third cornerstone of object-oriented programming:
+polymorphism (implemented in C++ with virtual functions).
+
+ 
+
+
+ 
+
+
+  
+  
