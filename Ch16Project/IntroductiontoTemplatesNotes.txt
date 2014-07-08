@@ -1,0 +1,336 @@
+Introduction to Templates
+===============================
+
+Q1: Simple definition of templates
+Inheritance and composition provide a way to reuse
+object code. The template feature in C++ provides a way to reuse source code.
+
+Q2: Need for containers
+The real need for containers comes when you start making objects on the heap using
+new and destroying them with delete. In the general programming
+problem, you don’t know how many objects you’re going to need
+while you’re writing the program.
+C programmers who rely on virtual memory to handle their
+“memory management” often find the idea of new, delete, and
+container classes disturbing. Apparently, one practice in C is to
+create a huge global array, larger than anything the program would
+appear to need. This may not require much thought (or awareness
+of malloc( )and free( )), but it produces programs that don’t port
+well and that hide subtle bugs.
+In addition, if you create a huge global array of objects in C++, the
+constructor and destructor overhead can slow things down
+significantly. The C++ approach works much better: When you
+need an object, create it with new, and put its pointer in a
+container. Later on, fish it out and do something to it. This way,
+you create only the objects you absolutely need. And usually you
+don’t have all the initialization conditions available at the start-up
+of the program. new allows you to wait until something happens in
+the environment before you can actually create the object.
+So in the most common situation, you’ll make a container that
+holds pointers to some objects of interest. You will create those
+objects using new and put the resulting pointer in the container
+(potentially upcasting it in the process), pulling it out later when
+you want to do something with the object. This technique produces
+the most flexible, general sort of program.
+
+Q3:Overview of templates
+You have an IntStack, which holds integers.
+But you want a stack that holds shapes or aircraft or plants or
+something else. Reinventing your source code every time doesn’t
+seem like a very intelligent approach with a language that touts
+reusability. There must be a better way.
+There are three techniques for source code reuse in this situation:
+1: the C way
+2: the Smalltalk approach,which significantly affected C++
+3: C++ approach: templates
+ 
+Q4: The C solution for templates
+Of course you’re trying to get away from the C
+approach because it’s messy and error prone and completely
+inelegant. In this approach, you copy the source code for a Stack
+and make modifications by hand, introducing new errors in the
+process. This is certainly not a very productive technique.
+
+Q5: The Smalltalk solution for templates
+Smalltalk (and Java, following its example)
+took a simple and straightforward approach: You want to reuse
+code, so use inheritance. To implement this, each container class
+holds items of the generic base class Object.But because the library in Smalltalk is of
+such fundamental importance, you don’t ever create a class from
+scratch. Instead, you must always inherit it from an existing class.
+You find a class as close as possible to the one you want, inherit
+from it, and make a few changes. Obviously, this is a benefit
+because it minimizes your effort (and explains why you spend a lot
+of time learning the class library before becoming an effective
+Smalltalk programmer).But it also means that all classes in Smalltalk end up being part of a
+single inheritance tree. You must inherit from a branch of this tree
+when creating a new class. Most of the tree is already there (it’s the
+Smalltalk class library), and at the root of the tree is a class called
+Object – the same class that each Smalltalk container holds.
+This is a neat trick because it means that every class in the Smalltalk
+(and Java1) class hierarchy is derived from Object, so every class
+can be held in every container (including that container itself). This
+type of single-tree hierarchy based on a fundamental generic type
+(often named Object, which is also the case in Java) is referred to as
+an “object-based hierarchy.” You may have heard this term and
+assumed it was some new fundamental concept in OOP, like
+polymorphism. It simply refers to a class hierarchy with Object (or
+some similar name) at its root and container classes that hold
+Object.
+
+Q6: Problem with Smalltalk object based hierarchy for templates
+Because the Smalltalk class library had a much longer history and
+experience behind it than did C++, and because the original C++
+compilers had no container class libraries, it seemed like a good
+idea to duplicate the Smalltalk library in C++. This was done as an
+experiment with an early C++ implementation, and because it
+represented a significant body of code, many people began using it.
+In the process of trying to use the container classes, they discovered
+a problem.The problem was that in Smalltalk (and most other OOP languages
+that I know of), all classes are automatically derived from a single
+hierarchy, but this isn’t true in C++. You might have your nice
+object-based hierarchy with its container classes, but then you
+might buy a set of shape classes or aircraft classes from another
+vendor who didn’t use that hierarchy. (For one thing, using that
+hierarchy imposes overhead, which C programmers eschew.) How
+do you insert a separate class tree into the container class in your
+object-based hierarchy? Because C++ supports multiple independent hierarchies,
+Smalltalk’s object-based hierarchy does not work so well.
+The solution seemed obvious. If you can have many inheritance
+hierarchies, then you should be able to inherit from more than one
+class: Multiple inheritance will solve the problem. 
+Compiler vendors invented and included their own object-based
+container-class hierarchies, most of which have since been replaced
+by template versions. You can argue that multiple inheritance is
+needed for solving general programming problems, but you’ll see
+that its complexity is best avoided except in special cases.
+
+Q7: C++ template solution
+Although an object-based hierarchy with multiple inheritance is
+conceptually straightforward, it turns out to be painful to use. In
+his original book Stroustrup demonstrated what he considered a
+preferable alternative to the object-based hierarchy. Container
+classes were created as large preprocessor macros with arguments
+that could be substituted with your desired type.When you
+wanted to create a container to hold a particular type, you made a
+couple of macro calls.Unfortunately, this approach was confused by all the existing
+Smalltalk literature and programming experience, and it was a bit
+unwieldy. Basically, nobody got it.
+In the meantime, Stroustrup and the C++ team at Bell Labs had
+modified his original macro approach, simplifying it and moving it
+from the domain of the preprocessor into the compiler. This new
+code-substitution device is called a template , and it represents a
+completely different way to reuse code. Instead of reusing object
+code, as with inheritance and composition, a template reuses source
+code. The container no longer holds a generic base class called
+Object, but instead it holds an unspecified parameter. When you
+use a template, the parameter is substituted by the compiler, much
+like the old macro approach, but cleaner and easier to use.
+Now, instead of worrying about inheritance or composition when
+you want to use a container class, you take the template version of
+the container and stamp out a specific version for your particular
+problem.The compiler does the work for you, and you end up with exactly
+the container you need to do your job, rather than an unwieldy
+inheritance hierarchy. In C++, the template implements the concept
+of a parameterized type. Another benefit of the template approach is
+that the novice programmer who may be unfamiliar or 
+uncomfortable with inheritance can still use canned container
+classes right away.
+
+Q8:Template Syntax
+The template keyword tells the compiler that the class definition
+that follows will manipulate one or more unspecified types. At the
+time the actual class code is generated from the template, those
+types must be specified so that the compiler can substitute them.
+template<class T>
+which says that T is the substitution parameter, and that it
+represents a type name.
+Array<int> ia;
+Array<float> fa;
+the compiler expands the Array template (this is called
+instantiation) twice, to create two new generated classes, which you
+can think of as Array_intand Array_float. (Different compilers
+may decorate the names in different ways.) These are classes just
+like the ones you would have produced if you had performed the
+substitution by hand, except that the compiler creates them for you.
+Also note that duplicate class definitions are either avoided by the compiler or merged by the
+linker.
+
+Q9: Non-inline function definitions for templates
+Of course, there are times when you’ll want to have non-inline
+member function definitions. In this case, the compiler needs to see
+the template declaration before the member function definition.
+Any reference to a template’s class name must be accompanied by
+its template argument list . You can imagine that internally, the class name is being decorated with the
+arguments in the template argument list to produce a unique class
+name identifier for each template instantiation.
+
+Q10: Header files and templates
+Even if you create non-inline function definitions, you’ll usually
+want to put all declarations and definitions for a template into a
+header file. This may seem to violate the normal header file rule of
+“Don’t put in anything that allocates storage,” (which prevents
+multiple definition errors at link time), but template definitions are
+special. Anything preceded by template<...> means the compiler
+won’t allocate storage for it at that point, but will instead wait until
+it’s told to (by a template instantiation), and that somewhere in the
+compiler and linker there’s a mechanism for removing multiple
+definitions of an identical template. So you’ll almost always put the
+entire template declaration and definition in the header file, for ease
+of use.There are times when you may need to place the template
+definitions in a separate cpp file to satisfy special needs (for
+example, forcing template instantiations to exist in only a single
+Windows dll file). Most compilers have some mechanism to allow
+this; you’ll have to investigate your particular compiler’s
+documentation to use it.Some people feel that putting all of the source code for your
+implementation in a header file makes it possible for people to steal
+and modify your code if they buy a library from you. This might be
+an issue, but it probably depends on the way you look at the
+problem: Are they buying a product or a service? If it’s a product,
+then you have to do everything you can to protect it, and probably
+you don’t want to give source code, just compiled code. But many
+people see software as a service, and even more than that, a
+subscription service. The customer wants your expertise, they want
+you to continue maintaining this piece of reusable code so that they
+don’t have to – so they can focus on getting their job done. I
+personally think most customers will treat you as a valuable
+resource and will not want to jeopardize their relationship with
+you. As for the few who want to steal rather than buy or do original
+work, they probably can’t keep up with you anyway.
+
+Q11: Templates weakly typed mechanism
+Notice that a template makes certain assumptions about the objects
+it is holding. For example, StackTemplate assumes there is some
+sort of assignment operation for T inside the push( ) function. You
+could say that a template “implies an interface” for the types it is
+capable of holding.Another way to say this is that templates provide a kind of weak
+typing mechanism for C++, which is ordinarily a strongly-typed
+language. Instead of insisting that an object be of some exact type in
+order to be acceptable, weak typing requires only that the member
+functions that it wants to call are available for a particular object.
+Thus, weakly-typed code can be applied to any object that can
+accept those member function calls, and is thus much more
+flexible.
+
+Q12: Constants in templates
+Template arguments are not restricted to class types; you can also
+use built-in types. The values of these arguments then become
+compile-time constants for that particular instantiation of the
+template. You can even use default values for these arguments.
+
+Q13: Deleting objects with templatized containers
+If the client programmer doesn’t explicitly remove all the pointers
+to objects that are held in the container, then the container should
+be able to correctly delete those pointers. That is to say, the
+container “owns” any objects that haven’t been removed, and is
+thus responsible for cleaning them up. The snag has been that
+cleanup requires knowing the type of the object, and creating a
+generic container class requires not knowing the type of the object.
+With templates, however, we can write code that doesn’t know the
+type of the object, and easily instantiate a new version of that
+container for every type that we want to contain. The individual
+instantiated containers do know the type of objects they hold and
+can thus call the correct destructor (assuming, in the typical case
+where polymorphism is involved, that a virtual destructor has been
+provided).
+
+Q14: Turning Ownership on and off for containers
+Containers that hold objects by value don’t usually worry about ownership because they clearly
+own the objects they contain. But if your container holds pointers
+(which is more common with C++, especially with polymorphism),
+then it’s very likely those pointers may also be used somewhere
+else in the program, and you don’t necessarily want to delete the
+object because then the other pointers in the program would be
+referencing a destroyed object. To prevent this from happening,
+you must consider ownership when designing and using a container.
+Many programs are much simpler than this, and don’t encounter
+the ownership problem: One container holds pointers to objects
+that are used only by that container. In this case ownership is very
+straightforward: The container owns its objects.
+The best approach to handling the ownership problem is to give the
+client programmer a choice. This is often accomplished by a
+constructor argument that defaults to indicating ownership (the
+simplest case). In addition there may be “get” and “set” functions
+to view and modify the ownership of the container. If the container
+has functions to remove an object, the ownership state usually
+affects that removal, so you may also find options to control
+destruction in the removal function. You could conceivably add
+ownership data for every element in the container, so each position
+would know whether it needed to be destroyed; this is a variant of
+reference counting, except that the container and not the object
+knows the number of references pointing to an object.
+
+Q15: Iterators
+An iterator is an object that moves through a container of other
+objects and selects them one at a time, without providing direct
+access to the implementation of that container. Iterators provide a
+standard way to access elements, whether or not a container
+provides a way to access the elements directly. You will see
+iterators used most often in association with container classes, and
+iterators are a fundamental concept in the design and use of the
+Standard C++ containers.In many ways, an iterator is a “smart pointer,” and in fact you’ll
+notice that iterators usually mimic most pointer operations. Unlike
+a pointer, however, the iterator is designed to be safe, so you’re
+much less likely to do the equivalent of walking off the end of an
+array (or if you do, you find out about it more easily).
+It is customary that an iterator is created with a constructor that
+attaches it to a single container object, and that the iterator is not
+attached to a different container during its lifetime. (Iterators are
+usually small and cheap, so you can easily make another one.)
+It is abstracting the complicated process of moving from
+one container element to the next into something that looks like a
+pointer. The goal is for every iterator in your program to have the
+same interface so that any code that uses the iterator doesn’t care
+what it’s pointing to – it just knows that it can reposition all
+iterators the same way, so the container that the iterator points to is
+unimportant. In this way you can write more generic code. 
+To aid in making things more generic, it would be nice to be able to
+say “every container has an associated class called iterator ,” 
+but this will typically cause naming problems. The solution is to add a
+nested iterator class to each container (notice that in this case,
+“iterator  ” begins with a lowercase letter so that it conforms to the
+style of the Standard C++ Library).Approach of first creating
+and debugging an ordinary class, then making it into a template, is
+generally considered to be easier than creating the template from
+scratch.
+ 
+Q16: Why iterators
+It’s common to see polymorphism, dynamic object creation, and
+containers used together in a true object-oriented program.
+Containers and dynamic object creation solve the problem of not
+knowing how many or what type of objects you’ll need. And if the
+container is configured to hold pointers to base-class objects, an
+upcast occurs every time you put a derived-class pointer into the
+container (with the associated code organization and extensibility
+benefits).
+
+Q17: Function templates
+We have been using only class templates, which instantiate new classes
+based on one or more type parameters. However, you can as easily
+create function templates, which create new functions based on type
+parameters. The reason you create a function template is the same
+reason you use for a class template: You’re trying to create generic
+code, and you do this by delaying the specification of one or more
+types. You just want to say that these type parameters support
+certain operations, not exactly what types they are.The function template
+just says how to do something given iterators describing a range of elements, as long as these iterators
+can be dereferenced, incremented, and compared. 
+We’d also like function template to be a generic algorithm, so that the
+containers can be any type at all and we don’t have to write a new
+version of the algorithm for each different type of container. Here’s
+where function templates are essential, because they automatically
+generate the specific code for each different type of container.  
+But without the extra indirection provided by the iterators, this
+genericness wouldn’t be possible. That’s why iterators are
+important; they allow you to write general-purpose code that
+involves containers without knowing the underlying structure of
+the container. (Notice that, in C++, iterators and generic algorithms
+require function templates in order to work.)
+Because container class templates are rarely subject to the
+inheritance and upcasting you see with “ordinary” classes, you’ll
+almost never see virtual functions in container classes. Container
+class reuse is implemented with templates, not with inheritance.
+
+
+
+  
