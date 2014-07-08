@@ -1,4 +1,0 @@
-ThinkingInCPlusPlusProjects
-===========================
-
-C++ Projects
