@@ -33,6 +33,8 @@ class IntStackIter {
   int index;
 public:
   IntStackIter(IntStack& is) : s(is), index(0) {}
+  IntStackIter(IntStack& is,bool) : s(is), index(s.top) {}
+
   int operator++() { // Prefix
     require(index < s.top, 
       "iterator moved out of range");
@@ -43,6 +45,13 @@ public:
       "iterator moved out of range");
     return s.stack[index++];
   }
+  // To see if you're at the end:
+  bool operator==(const IntStackIter& rv) const {
+    return index == rv.index;
+  }
+  bool operator!=(const IntStackIter& rv) const {
+    return index != rv.index;
+  }
 };
 
 int main() {
@@ -50,7 +59,10 @@ int main() {
   for(int i = 0; i < 20; i++)
     is.push(fibonacci(i));
   // Traverse with an iterator:
-  IntStackIter it(is);
-  for(int j = 0; j < 20; j++)
-    cout << it++ << endl;
+  IntStackIter start(is);
+  IntStackIter end(is,true);
+
+  while(start != end)
+    cout << start++ << endl;
+
 } ///:~
